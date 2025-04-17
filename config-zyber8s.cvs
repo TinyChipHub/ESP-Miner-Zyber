@@ -1,8 +1,8 @@
 key,type,encoding,value
 main,namespace,,
 hostname,data,string,zyber8s
-wifissid,data,string,Cristalize2.4
-wifipass,data,string,Xaiten1678
+wifissid,data,string,zyber8s
+wifipass,data,string,x
 stratumurl,data,string,xnas.xaiten.com
 stratumport,data,u16,14400
 stratumuser,data,string,1ER7ciDN5iL9Nr4r9XWiCJYSGA9ERJffkD.GammaHex
