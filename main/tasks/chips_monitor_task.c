@@ -14,6 +14,8 @@
 
 static const char *TAG = "chip_monitor_task";
 static uint32_t reset_count = 0;
+static uint32_t temp_chips_count[8];
+static uint32_t temp_chips_fail_count[8];
 
 void reset_all_chip(void * pvParameters){
     GlobalState *GLOBAL_STATE = (GlobalState *)pvParameters;
@@ -54,6 +56,25 @@ void chip_monitor_task(void *pvParameters){
             if(reset_count>10){
                 ESP_LOGE(TAG, "Chips reset attemp > 10, It is better to restart the miner again");
                 exit(EXIT_FAILURE);
+            }
+        }
+
+        if(!GLOBAL_STATE->is_chips_fail_detected&&GLOBAL_STATE->ASIC_initalized){
+            for(int a=0;a<8;a++){
+                if(temp_chips_count[a]<GLOBAL_STATE->chip_submit[a]){
+                    temp_chips_fail_count[a]=0;
+                    temp_chips_count[a]=GLOBAL_STATE->chip_submit[a];
+                }else{
+                    if(temp_chips_count[a]>0){
+                        temp_chips_fail_count[a]++;
+                        if(temp_chips_fail_count[a]>=5){
+                            GLOBAL_STATE->is_chips_fail_detected=true;
+                            for(int a=0;a<8;a++){
+                                temp_chips_fail_count[a]=0;
+                            }
+                        }
+                    }
+                }
             }
         }
 
