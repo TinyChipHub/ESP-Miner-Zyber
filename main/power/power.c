@@ -56,11 +56,12 @@ float Power_get_current(GlobalState * GLOBAL_STATE) {
 float Power_get_power(GlobalState * GLOBAL_STATE) {
     float power = 0.0;
     float current = 0.0;
-
+    PowerManagementModule * power_management = &GLOBAL_STATE->POWER_MANAGEMENT_MODULE;
     switch (GLOBAL_STATE->device_model) {
         case DEVICE_ZYBER8S:
         case DEVICE_ZYBER8G:
                 current = TPS546_get_iout() * 1000.0;
+                power_management->current=current;
                 // calculate regulator power (in milliwatts)
                 power = (TPS546_get_vout() * current) / 1000.0;
                 // The power reading from the TPS546 is only it's output power. So the rest of the Bitaxe power is not accounted for.
