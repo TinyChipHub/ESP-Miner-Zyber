@@ -5,11 +5,11 @@ wifissid,data,string,Cristalize2.4
 wifipass,data,string,Xaiten1678
 stratumurl,data,string,xnas.xaiten.com
 stratumport,data,u16,14400
-stratumuser,data,string,1ER7ciDN5iL9Nr4r9XWiCJYSGA9ERJffkD.GammaHex
+stratumuser,data,string,1ER7ciDN5iL9Nr4r9XWiCJYSGA9ERJffkD.zyber8s
 stratumpass,data,string,x
 fbstratumurl,data,string,xnas.xaiten.com
 fbstratumport,data,u16,14400
-fbstratumuser,data,string,1ER7ciDN5iL9Nr4r9XWiCJYSGA9ERJffkD.GammaHex
+fbstratumuser,data,string,1ER7ciDN5iL9Nr4r9XWiCJYSGA9ERJffkD.zyber8s
 asicfrequency,data,u16,575
 asicvoltage,data,u16,1250
 asicmodel,data,string,BM1368
@@ -19,5 +19,5 @@ flipscreen,data,u16,1
 invertfanpol,data,u16,1
 autofanspeed,data,u16,0
 fanspeed,data,u16,75
-beneathfanspeed,data,u16,80
+beneathfanspeed,data,u16,75
 selftest,data,u16,0
