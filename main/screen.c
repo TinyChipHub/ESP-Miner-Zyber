@@ -469,29 +469,33 @@ static void screen_update_cb(lv_timer_t * timer)
     lv_label_set_text_fmt(ui_lbBlockFound,"%d",(int)module->block_found);
 
     /*Devie info. update*/
-    // if (CAROUSEL_DELAY_COUNT <= current_screen_counter){
-    //     for(int a=0;a<8;a++){
-    //         if(temp_chips_count[a]<GLOBAL_STATE->chip_submit[a]){
-    //             if(temp_chips_count[a]==0){
-    //                 lv_label_set_text(chips_label[a],"Up");
-    //                 lv_obj_set_style_text_color(chips_label[a],lv_color_hex(TEXT_GREEN),LV_PART_MAIN|LV_STATE_DEFAULT);
-    //             }
-    //             temp_chips_fail_count[a]=0;
-    //             temp_chips_count[a]=GLOBAL_STATE->chip_submit[a];
-    //         }else{
-    //             if(temp_chips_count[a]>0){
-    //                 temp_chips_fail_count[a]++;
-    //                 if(temp_chips_fail_count[a]>=10){
-    //                     lv_label_set_text(chips_label[a],"Dw");
-    //                     lv_obj_set_style_text_color(chips_label[a],lv_color_hex(TEXT_RED),LV_PART_MAIN|LV_STATE_DEFAULT);
-    //                 }else if(temp_chips_fail_count[a]>=3){
-    //                     lv_label_set_text(chips_label[a],"Wa");
-    //                     lv_obj_set_style_text_color(chips_label[a],lv_color_hex(TEXT_YELLOW),LV_PART_MAIN|LV_STATE_DEFAULT);
-    //                 }
-    //             }
-    //         }
-    //     }
-    // }
+    if (CAROUSEL_DELAY_COUNT <= current_screen_counter){
+        if(!GLOBAL_STATE->is_chips_fail_detected&&GLOBAL_STATE->ASIC_initalized){
+            for(int a=0;a<8;a++){
+                if(temp_chips_count[a]<GLOBAL_STATE->chip_submit[a]){
+                    // if(temp_chips_count[a]==0){
+                    //     lv_label_set_text(chips_label[a],"Up");
+                    //     lv_obj_set_style_text_color(chips_label[a],lv_color_hex(TEXT_GREEN),LV_PART_MAIN|LV_STATE_DEFAULT);
+                    // }
+                    temp_chips_fail_count[a]=0;
+                    temp_chips_count[a]=GLOBAL_STATE->chip_submit[a];
+                }else{
+                    if(temp_chips_count[a]>0){
+                        temp_chips_fail_count[a]++;
+                        if(temp_chips_fail_count[a]>=10){
+                            // lv_label_set_text(chips_label[a],"Dw");
+                            // lv_obj_set_style_text_color(chips_label[a],lv_color_hex(TEXT_RED),LV_PART_MAIN|LV_STATE_DEFAULT);
+                            GLOBAL_STATE->is_chips_fail_detected=true;
+                        }
+                        // else if(temp_chips_fail_count[a]>=3){
+                        //     lv_label_set_text(chips_label[a],"Wa");
+                        //     lv_obj_set_style_text_color(chips_label[a],lv_color_hex(TEXT_YELLOW),LV_PART_MAIN|LV_STATE_DEFAULT);
+                        // }
+                    }
+                }
+            }
+        }
+    }
 
     lv_label_set_text_fmt(ui_lbDIVin,"%.1fV",power_management->voltage/1000);
     lv_label_set_text_fmt(ui_lbDIVout,"%.02fV",power_management->outVoltage_mv/4);///1000/GLOBAL_STATE->voltage_domain);

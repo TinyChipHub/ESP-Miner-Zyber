@@ -150,6 +150,11 @@ typedef struct
     bool is_multichip;
     uint32_t chip_submit[8];
     char chip_submit_srt[128];
+
+    TaskHandle_t job_task_h;
+    TaskHandle_t asic_task_h;
+    TaskHandle_t asic_result_task_h;
+    bool is_chips_fail_detected;
 } GlobalState;
 
 #endif /* GLOBAL_STATE_H_ */

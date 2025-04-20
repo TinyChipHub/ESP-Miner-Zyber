@@ -17,7 +17,8 @@ static const char *TAG = "ASIC_task";
 void ASIC_task(void *pvParameters)
 {
     GlobalState *GLOBAL_STATE = (GlobalState *)pvParameters;
-
+    GLOBAL_STATE->asic_task_h = xTaskGetCurrentTaskHandle();
+    
     //initialize the semaphore
     GLOBAL_STATE->ASIC_TASK_MODULE.semaphore = xSemaphoreCreateBinary();
 

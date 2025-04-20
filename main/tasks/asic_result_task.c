@@ -16,7 +16,8 @@ static const char *TAG = "asic_result";
 void ASIC_result_task(void *pvParameters)
 {
     GlobalState *GLOBAL_STATE = (GlobalState *)pvParameters;
-
+    GLOBAL_STATE->asic_result_task_h = xTaskGetCurrentTaskHandle();
+    
     while (1)
     {
         //task_result *asic_result = (*GLOBAL_STATE->ASIC_functions.receive_result_fn)(GLOBAL_STATE);

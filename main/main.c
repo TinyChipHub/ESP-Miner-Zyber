@@ -10,6 +10,7 @@
 #include "asic_result_task.h"
 #include "asic_task.h"
 #include "create_jobs_task.h"
+#include "chips_monitor_task.h"
 #include "esp_netif.h"
 #include "system.h"
 #include "http_server.h"
@@ -151,6 +152,7 @@ void app_main(void)
     xTaskCreate(create_jobs_task, "stratum miner", 8192, (void *) &GLOBAL_STATE, 10, NULL);
     xTaskCreate(ASIC_task, "asic", 8192, (void *) &GLOBAL_STATE, 10, NULL);
     xTaskCreate(ASIC_result_task, "asic result", 8192, (void *) &GLOBAL_STATE, 15, NULL);
+    xTaskCreate(chip_monitor_task, "chip monitor result", 8192, (void *) &GLOBAL_STATE, 5, NULL);
 }
 
 void MINER_set_wifi_status(wifi_status_t status, int retry_count, int reason)

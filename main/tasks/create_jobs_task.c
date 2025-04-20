@@ -20,7 +20,8 @@ static void generate_work(GlobalState *GLOBAL_STATE, mining_notify *notification
 void create_jobs_task(void *pvParameters)
 {
     GlobalState *GLOBAL_STATE = (GlobalState *)pvParameters;
-
+    GLOBAL_STATE->job_task_h = xTaskGetCurrentTaskHandle();
+    
     while (1)
     {
         mining_notify *mining_notification = (mining_notify *)queue_dequeue(&GLOBAL_STATE->stratum_queue);

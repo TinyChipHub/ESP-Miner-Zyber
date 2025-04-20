@@ -57,12 +57,19 @@
         "task.h": "c",
         "stdlib.h": "c",
         "thermal.h": "c",
-        "xlocale": "c"
+        "xlocale": "c",
+        "chips_monitor_task.h": "c"
     },
     "editor.formatOnSave": false,
     "cSpell.words": [
         "ssid"
     ],
     "idf.port": "/dev/ttyACM0",
-    "C_Cpp.intelliSenseEngine": "Tag Parser"
+    "C_Cpp.intelliSenseEngine": "Tag Parser",
+    "idf.customExtraVars": {
+        "OPENOCD_SCRIPTS": "e:\\espressif\\tools\\openocd-esp32\\v0.12.0-esp32-20240318/openocd-esp32/share/openocd/scripts",
+        "IDF_CCACHE_ENABLE": "1",
+        "ESP_ROM_ELF_DIR": "e:\\espressif\\tools\\esp-rom-elfs\\20240305/",
+        "IDF_TARGET": "esp32s3"
+    }
 }

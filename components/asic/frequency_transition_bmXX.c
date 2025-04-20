@@ -8,6 +8,13 @@ const char *FREQUENCY_TRANSITION_TAG = "frequency_transition";
 
 static float current_frequency = 56.25;
 
+/**
+ * Reset the current frequency to init status;
+ */
+void reset_current_frequency(){
+    current_frequency = 56.25;
+}
+
 bool do_frequency_transition(float target_frequency, set_hash_frequency_fn set_frequency_fn, int asic_type) {
     if (set_frequency_fn == NULL) {
         ESP_LOGE(FREQUENCY_TRANSITION_TAG, "Invalid function pointer provided");

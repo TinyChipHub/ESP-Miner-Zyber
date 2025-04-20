@@ -17,6 +17,7 @@ SRCS
     "./tasks/asic_task.c"
     "./tasks/asic_result_task.c"
     "./tasks/power_management_task.c"
+    "./tasks/chips_monitor_task.c"
     "./thermal/EMC2302.c"
     "./thermal/TMP1075.c"
     "./thermal/thermal.c"

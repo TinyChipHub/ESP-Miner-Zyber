@@ -27,5 +27,5 @@ typedef void (*set_hash_frequency_fn)(float frequency);
  * @return bool True if the transition was successful, false otherwise
  */
 bool do_frequency_transition(float target_frequency, set_hash_frequency_fn set_frequency_fn, int asic_type);
-
+void reset_current_frequency();
 #endif // FREQUENCY_TRANSITION_H
