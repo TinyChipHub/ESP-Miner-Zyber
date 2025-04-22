@@ -79,17 +79,26 @@ void POWER_MANAGEMENT_task(void * pvParameters)
     vTaskDelay(500 / portTICK_PERIOD_MS);
     uint16_t last_core_voltage = 0.0;
     uint16_t last_asic_frequency = power_management->frequency_value;
-    
+
+    power_management->voltage = 12000;
+    power_management->power = 124;
+    power_management->outVoltage_mv = 4.8;
+    power_management->chip_temp_avg = 56;
+
+    time_t t;
+    srand((unsigned) time(&t));
+    snprintf(GLOBAL_STATE->SYSTEM_MODULE.best_session_diff_string,10,"%s","244M");
+
     while (1) {
 
-        power_management->voltage = Power_get_input_voltage(GLOBAL_STATE);
-        power_management->power = Power_get_power(GLOBAL_STATE);
-        power_management->outVoltage_mv = Power_get_output_voltage(GLOBAL_STATE);
+        
+        //power_management->power = 124
+        
         power_management->fan_rpm = Thermal_get_fan_speed(GLOBAL_STATE->device_model);
-        power_management->chip_temp_avg = Thermal_get_chip_temp(GLOBAL_STATE);
-
         power_management->vr_temp = Power_get_vreg_temp(GLOBAL_STATE);
-
+        GLOBAL_STATE->SYSTEM_MODULE.current_hashrate = 5970 + rand()%835;
+        GLOBAL_STATE->SYSTEM_MODULE.shares_accepted = GLOBAL_STATE->SYSTEM_MODULE.shares_accepted + rand()%2;
+        
 
         // ASIC Thermal Diode will give bad readings if the ASIC is turned off
         // if(power_management->voltage < tps546_config.TPS546_INIT_VOUT_MIN){

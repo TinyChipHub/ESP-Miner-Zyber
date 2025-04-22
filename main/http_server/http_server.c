@@ -516,6 +516,7 @@ static esp_err_t POST_restart(httpd_req_t * req)
 }
 
 /* Simple handler for getting system handler */
+
 static esp_err_t GET_system_info(httpd_req_t * req)
 {
     if (is_network_allowed(req) != ESP_OK) {
@@ -530,6 +531,7 @@ static esp_err_t GET_system_info(httpd_req_t * req)
         return ESP_OK;
     }
 
+    //rand()
 
     char * ssid = nvs_config_get_string(NVS_CONFIG_WIFI_SSID, CONFIG_ESP_WIFI_SSID);
     char * hostname = nvs_config_get_string(NVS_CONFIG_HOSTNAME, CONFIG_LWIP_LOCAL_HOSTNAME);

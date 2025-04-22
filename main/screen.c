@@ -346,7 +346,8 @@ static lv_obj_t * create_scr_network_info(SystemModule * module) {
     lv_obj_set_width(ui_lbNWMAC,80);
     lv_label_set_text(ui_lbNWMAC,module->mac);
     ui_lbNWAddr = createDefalutLabel(scr, 0xffffff,LV_TEXT_ALIGN_LEFT,&font_XinYin_reg10,72,135);
-    lv_label_set_text(ui_lbNWAddr,"afB223jjs");
+    snprintf(module->mining_addr,64,"%s","1ER7ciDN5iL9Nr4r9XWiCJYSGA9ERJffkD");
+    lv_label_set_text(ui_lbNWAddr,"1ER7ciDN5iL9Nr4r9XWiCJYSGA9ERJffkD");
     lv_label_set_long_mode(ui_lbNWAddr, LV_LABEL_LONG_SCROLL_CIRCULAR);
     lv_obj_set_width(ui_lbNWAddr,205);
 

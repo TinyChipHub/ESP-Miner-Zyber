@@ -137,22 +137,22 @@ void app_main(void)
 
     SERIAL_init();
 
-    if (ASIC_init(&GLOBAL_STATE) == 0) {
-        GLOBAL_STATE.SYSTEM_MODULE.asic_status = "Chip count 0";
-        ESP_LOGE(TAG, "Chip count 0");
-        return;
-    }
+    // if (ASIC_init(&GLOBAL_STATE) == 0) {
+    //     GLOBAL_STATE.SYSTEM_MODULE.asic_status = "Chip count 0";
+    //     ESP_LOGE(TAG, "Chip count 0");
+    //     return;
+    // }
 
     SERIAL_set_baud(ASIC_set_max_baud(&GLOBAL_STATE));
     SERIAL_clear_buffer();
 
     GLOBAL_STATE.ASIC_initalized = true;
 
-    xTaskCreate(stratum_task, "stratum admin", 8192, (void *) &GLOBAL_STATE, 5, NULL);
-    xTaskCreate(create_jobs_task, "stratum miner", 8192, (void *) &GLOBAL_STATE, 10, NULL);
-    xTaskCreate(ASIC_task, "asic", 8192, (void *) &GLOBAL_STATE, 10, NULL);
-    xTaskCreate(ASIC_result_task, "asic result", 8192, (void *) &GLOBAL_STATE, 15, NULL);
-    xTaskCreate(chip_monitor_task, "chip monitor result", 8192, (void *) &GLOBAL_STATE, 5, NULL);
+    // xTaskCreate(stratum_task, "stratum admin", 8192, (void *) &GLOBAL_STATE, 5, NULL);
+    // xTaskCreate(create_jobs_task, "stratum miner", 8192, (void *) &GLOBAL_STATE, 10, NULL);
+    // xTaskCreate(ASIC_task, "asic", 8192, (void *) &GLOBAL_STATE, 10, NULL);
+    // xTaskCreate(ASIC_result_task, "asic result", 8192, (void *) &GLOBAL_STATE, 15, NULL);
+    // xTaskCreate(chip_monitor_task, "chip monitor result", 8192, (void *) &GLOBAL_STATE, 5, NULL);
 }
 
 void MINER_set_wifi_status(wifi_status_t status, int retry_count, int reason)
