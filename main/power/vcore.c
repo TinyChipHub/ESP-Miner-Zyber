@@ -22,7 +22,7 @@ static TPS546_CONFIG TPS546_CONFIG_ZYBER = {
     /* vout voltage */
     .TPS546_INIT_SCALE_LOOP = 0.125,
     .TPS546_INIT_VOUT_MIN = 2.5,
-    .TPS546_INIT_VOUT_MAX = 5.0,
+    .TPS546_INIT_VOUT_MAX = 5.5,
     .TPS546_INIT_VOUT_COMMAND = 3.6,
     /* iout current */
     .TPS546_INIT_IOUT_OC_WARN_LIMIT = 80.00, /* A */
