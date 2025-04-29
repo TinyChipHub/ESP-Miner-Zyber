@@ -69,7 +69,8 @@ export class SystemService {
           boardtemp1: 30,
           boardtemp2: 40,
           overheat_mode: 0,
-          chipSubmitStr: ""
+          chipSubmitStr: "",
+          runningMode: 1,
         }
       ).pipe(delay(1000));
     }

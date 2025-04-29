@@ -6,7 +6,7 @@
         </p-message>
 
         <ng-container *ngIf="!settingsUnlocked && restrictedModels.includes(ASICModel)">
-            <div class="field grid p-fluid">
+            <!-- <div class="field grid p-fluid">
                 <label class="col-12 mb-2 md:col-2 md:mb-0" htmlFor="frequency">Frequency</label>
                 <div class="col-12 md:col-10">
                     <p-dropdown [options]="getDropdownFrequency()" optionLabel="name" optionValue="value"
@@ -18,7 +18,17 @@
                 <label class="col-12 mb-2 md:col-2 md:mb-0" htmlFor="coreVoltage">Core Voltage</label>
                 <p-dropdown class="col-12 md:col-10" [options]="getCoreVoltage()" optionLabel="name"
                     optionValue="value" formControlName="coreVoltage"></p-dropdown>
+            </div> -->
+            <div class="field grid p-fluid">
+                <label class="col-12 mb-2 md:col-2 md:mb-0" htmlFor="frequency">Frequency</label>
+                <p-button class="mr-2" label="ECO" [disabled]="runningMode==0" (click)="changeRunningMode(0)"/>
+                <p-button class="mr-2" label="Normal" [disabled]="runningMode==1" (click)="changeRunningMode(1)"/>
+                <p-button class="mr-2" label="Performance"[disabled]="runningMode==2" (click)="changeRunningMode(2)"/>
+                <!-- <div class="col-12 md:col-10">
+                    
+                </div> -->
             </div>
+
         </ng-container>
 
         <ng-container *ngIf="settingsUnlocked === true">

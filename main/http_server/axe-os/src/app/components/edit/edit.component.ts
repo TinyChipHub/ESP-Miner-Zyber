@@ -22,6 +22,7 @@ export class EditComponent implements OnInit, OnDestroy {
 
   public savedChanges: boolean = false;
   public settingsUnlocked: boolean = false;
+  public runningMode: number = 1;
   public eASICModel = eASICModel;
   public ASICModel!: eASICModel;
   public restrictedModels: eASICModel[] = Object.values(eASICModel)
@@ -173,6 +174,7 @@ export class EditComponent implements OnInit, OnDestroy {
       )
       .subscribe(info => {
         this.ASICModel = info.ASICModel;
+        this.runningMode = info.runningMode;
 
         // Check if overclock is enabled in NVS
         if (info.overclockEnabled === 1) {
@@ -242,6 +244,10 @@ export class EditComponent implements OnInit, OnDestroy {
   showWifiPassword: boolean = false;
   toggleWifiPasswordVisibility() {
     this.showWifiPassword = !this.showWifiPassword;
+  }
+
+  changeRunningMode(mode: number){
+    this.runningMode = mode;
   }
 
   disableOverheatMode() {
