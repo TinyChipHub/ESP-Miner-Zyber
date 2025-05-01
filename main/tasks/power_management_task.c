@@ -6,6 +6,7 @@
 #include "math.h"
 #include "mining.h"
 #include "nvs_config.h"
+#include "nvs_device.h"
 #include "serial.h"
 #include "TPS546.h"
 #include "vcore.h"
@@ -79,6 +80,7 @@ void POWER_MANAGEMENT_task(void * pvParameters)
     vTaskDelay(500 / portTICK_PERIOD_MS);
     uint16_t last_core_voltage = 0.0;
     uint16_t last_asic_frequency = power_management->frequency_value;
+    uint16_t last_running_mode = GLOBAL_STATE->runningMode;
     
     while (1) {
 
@@ -139,12 +141,23 @@ void POWER_MANAGEMENT_task(void * pvParameters)
         // New voltage and frequency adjustment code
         uint16_t core_voltage = nvs_config_get_u16(NVS_CONFIG_ASIC_VOLTAGE, CONFIG_ASIC_VOLTAGE);
         uint16_t asic_frequency = nvs_config_get_u16(NVS_CONFIG_ASIC_FREQ, CONFIG_ASIC_FREQUENCY);
+        uint16_t isOverClockEnabled = nvs_config_get_u16(NVS_CONFIG_OVERCLOCK_ENABLED,0);
+
+        if(isOverClockEnabled==0){
+            uint16_t runningMode =  nvs_config_get_u16(NVS_CONFIG_RUNNING_MODE,1);
+            if(runningMode!=last_running_mode){
+                last_running_mode = runningMode;
+                NVSDevice_get_running_mode_setting(GLOBAL_STATE,runningMode,&asic_frequency,&core_voltage);
+            }
+        }
 
         if (core_voltage != last_core_voltage) {
             ESP_LOGI(TAG, "setting new vcore voltage to %umV", core_voltage);
             VCORE_set_voltage((double) core_voltage / 1000.0, GLOBAL_STATE);
             last_core_voltage = core_voltage;
         }
+
+
 
         if (asic_frequency != last_asic_frequency) {
             ESP_LOGI(TAG, "New ASIC frequency requested: %uMHz (current: %uMHz)", asic_frequency, last_asic_frequency);

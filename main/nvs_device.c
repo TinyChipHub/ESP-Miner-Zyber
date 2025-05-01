@@ -12,7 +12,19 @@
 
 static const char * TAG = "nvs_device";
 
+static RunningModeSettings ZYBER8S_SETTINGS = {
+    {490,1166},
+    {550,1200},
+    {600,1250},
+};
+
 esp_err_t NVSDevice_init(void) {
+    RunningModeSettings zs = {
+        {490,1166},
+        {550,1200},
+        {600,1250},
+    };
+
     esp_err_t err = nvs_flash_init();
     if (err == ESP_ERR_NVS_NO_FREE_PAGES) {
         ESP_ERROR_CHECK(nvs_flash_erase());
@@ -52,5 +64,10 @@ esp_err_t NVSDevice_parse_config(GlobalState * GLOBAL_STATE) {
         GLOBAL_STATE->is_multichip=true;
     }
 
+    return ESP_OK;
+}
+
+esp_err_t NVSDevice_get_running_mode_setting(GlobalState * GLOBAL_STATE, uint16_t mode, uint16_t *freq, uint16_t *cv){
+    
     return ESP_OK;
 }

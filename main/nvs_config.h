@@ -32,6 +32,7 @@
 #define NVS_CONFIG_OVERHEAT_MODE "overheat_mode"
 #define NVS_CONFIG_OVERCLOCK_ENABLED "oc_enabled"
 #define NVS_CONFIG_SWARM "swarmconfig"
+#define NVS_CONFIG_RUNNING_MODE "runningmode"
 
 // Theme configuration
 #define NVS_CONFIG_THEME_SCHEME "themescheme"

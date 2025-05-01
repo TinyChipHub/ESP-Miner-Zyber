@@ -481,6 +481,9 @@ static esp_err_t PATCH_update_settings(httpd_req_t * req)
     if ((item = cJSON_GetObjectItem(root, "overclockEnabled")) != NULL) {
         nvs_config_set_u16(NVS_CONFIG_OVERCLOCK_ENABLED, item->valueint);
     }
+    if ((item = cJSON_GetObjectItem(root, "runningMode")) != NULL) {
+        nvs_config_set_u16(NVS_CONFIG_RUNNING_MODE, item->valueint);
+    }
 
     cJSON_Delete(root);
     httpd_resp_send_chunk(req, NULL, 0);

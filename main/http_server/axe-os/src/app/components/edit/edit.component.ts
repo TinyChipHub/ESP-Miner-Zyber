@@ -246,8 +246,18 @@ export class EditComponent implements OnInit, OnDestroy {
     this.showWifiPassword = !this.showWifiPassword;
   }
 
-  changeRunningMode(mode: number){
-    this.runningMode = mode;
+  changeRunningMode(mode: number){    
+    this.systemService.updateSystem(this.uri, { runningMode: mode })
+      .pipe(this.loadingService.lockUIUntilComplete())
+      .subscribe({
+        next: () => {
+          this.runningMode = mode;
+          console.log(`Runing mode change to: ${this.runningMode}`);
+        },
+        error: (err) => {
+          console.error(`Failed to change running mode`);
+        }
+      });
   }
 
   disableOverheatMode() {
