@@ -18,13 +18,15 @@ static RunningModeSettings ZYBER8S_SETTINGS = {
     {600,1250},
 };
 
-esp_err_t NVSDevice_init(void) {
-    RunningModeSettings zs = {
-        {490,1166},
-        {550,1200},
-        {600,1250},
-    };
+static RunningModeSettings ZYBER8G_SETTINGS = {
+    {525,1150},
+    {600,1200},
+    {650,1250},
+};
 
+
+
+esp_err_t NVSDevice_init(void) {
     esp_err_t err = nvs_flash_init();
     if (err == ESP_ERR_NVS_NO_FREE_PAGES) {
         ESP_ERROR_CHECK(nvs_flash_erase());
@@ -68,6 +70,18 @@ esp_err_t NVSDevice_parse_config(GlobalState * GLOBAL_STATE) {
 }
 
 esp_err_t NVSDevice_get_running_mode_setting(GlobalState * GLOBAL_STATE, uint16_t mode, uint16_t *freq, uint16_t *cv){
-    
+    switch(GLOBAL_STATE->device_model){
+        case DEVICE_ZYBER8S:
+            *freq = ZYBER8S_SETTINGS[mode].frequency;
+            *cv = ZYBER8S_SETTINGS[mode].core_voltage;
+            break;
+        case DEVICE_ZYBER8G:
+            *freq = ZYBER8G_SETTINGS[mode].frequency;
+            *cv = ZYBER8G_SETTINGS[mode].core_voltage;
+            break;
+        case DEVICE_UNKNOWN:
+            ESP_LOGW(TAG, "No setting for Unkonwn device");
+            break;
+    }
     return ESP_OK;
 }

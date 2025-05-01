@@ -617,7 +617,7 @@ static esp_err_t GET_system_info(httpd_req_t * req)
     cJSON_AddNumberToObject(root, "fanspeed", GLOBAL_STATE->POWER_MANAGEMENT_MODULE.fan_perc);
     cJSON_AddNumberToObject(root, "beneathfanspeed", GLOBAL_STATE->POWER_MANAGEMENT_MODULE.beneath_fan_perc);
     cJSON_AddNumberToObject(root, "fanrpm", GLOBAL_STATE->POWER_MANAGEMENT_MODULE.fan_rpm);
-    cJSON_AddNumberToObject(root, "runningMode", GLOBAL_STATE->runningMode);
+    cJSON_AddNumberToObject(root, "runningMode", nvs_config_get_u16(NVS_CONFIG_RUNNING_MODE, 1));
     
     if (GLOBAL_STATE->SYSTEM_MODULE.power_fault > 0) {
         cJSON_AddStringToObject(root, "power_fault", VCORE_get_fault_string(GLOBAL_STATE));

@@ -148,6 +148,8 @@ void POWER_MANAGEMENT_task(void * pvParameters)
             if(runningMode!=last_running_mode){
                 last_running_mode = runningMode;
                 NVSDevice_get_running_mode_setting(GLOBAL_STATE,runningMode,&asic_frequency,&core_voltage);
+                nvs_config_set_u16(NVS_CONFIG_ASIC_FREQ,asic_frequency);
+                nvs_config_set_u16(NVS_CONFIG_ASIC_VOLTAGE,core_voltage);
             }
         }
 
