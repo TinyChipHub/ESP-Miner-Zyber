@@ -20,12 +20,15 @@
                     optionValue="value" formControlName="coreVoltage"></p-dropdown>
             </div> -->
             <div class="field grid p-fluid">
-                <label class="col-12 mb-2 md:col-2 md:mb-0" htmlFor="frequency">Frequency</label>
+                <label class="col-12 mb-2 md:col-2 md:mb-0" htmlFor="frequency">Select Running Mode:</label>
                 <p-button class="mr-2" label="ECO" [disabled]="runningMode==0" (click)="changeRunningMode(0)"/>
                 <p-button class="mr-2" label="Normal" [disabled]="runningMode==1" (click)="changeRunningMode(1)"/>
                 <p-button class="mr-2" label="Performance"[disabled]="runningMode==2" (click)="changeRunningMode(2)"/>
                 <!-- <div class="col-12 md:col-10">
                 </div> -->
+            </div>
+            <div class="field grid p-fluid">
+                <p-button class="mr-2" label="Enable Overclock Mode" (click)="toggleOverclockMode(true)"/>
             </div>
 
         </ng-container>

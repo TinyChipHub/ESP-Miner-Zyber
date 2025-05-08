@@ -53,10 +53,10 @@ void chip_monitor_task(void *pvParameters){
     while(1){
         if(reset_count>0){
             ESP_LOGW(TAG, "Chips reset attemp = %lu", reset_count);
-            if(reset_count>10){
-                ESP_LOGE(TAG, "Chips reset attemp > 10, It is better to restart the miner again");
-                exit(EXIT_FAILURE);
-            }
+            // if(reset_count>10){
+            //     ESP_LOGE(TAG, "Chips reset attemp > 10, It is better to restart the miner again");
+            //     exit(EXIT_FAILURE);
+            // }
         }
 
         if(!GLOBAL_STATE->is_chips_fail_detected&&GLOBAL_STATE->ASIC_initalized){

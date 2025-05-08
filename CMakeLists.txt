@@ -8,7 +8,7 @@ cmake_minimum_required(VERSION 3.5)
 
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 
-set(PROJECT_VER "Zyber-v2.7.0-TCH")
+set(PROJECT_VER "Zyber-v2.7.1-TCH")
 
 project(esp-miner)
 
