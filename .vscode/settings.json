@@ -58,7 +58,8 @@
         "stdlib.h": "c",
         "thermal.h": "c",
         "xlocale": "c",
-        "chips_monitor_task.h": "c"
+        "chips_monitor_task.h": "c",
+        "esp_wifi.h": "c"
     },
     "editor.formatOnSave": false,
     "cSpell.words": [
