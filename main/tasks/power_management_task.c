@@ -86,6 +86,7 @@ void POWER_MANAGEMENT_task(void * pvParameters)
 
         power_management->voltage = Power_get_input_voltage(GLOBAL_STATE);
         power_management->power = Power_get_power(GLOBAL_STATE);
+        ESP_LOGI(TAG,"Current: %.2f",power_management->current);
         power_management->outVoltage_mv = Power_get_output_voltage(GLOBAL_STATE);
         power_management->fan_rpm = Thermal_get_fan_speed(GLOBAL_STATE->device_model);
         power_management->chip_temp_avg = Thermal_get_chip_temp(GLOBAL_STATE);
