@@ -24,13 +24,13 @@ echo --------Building config.bin--------
 echo -----------------------------------
 echo `
 echo Building config.bin for board Zyber8S
-python.exe E:\esp\v5.4\esp-idf\components\nvs_flash\nvs_partition_generator\nvs_partition_gen.py generate .\config-zyber8s.cvs .\build\config-zyber8s.bin 0x6000
+python.exe D:\espidf\v5.4\esp-idf\components\nvs_flash\nvs_partition_generator\nvs_partition_gen.py generate .\config-zyber8s.cvs .\build\config-zyber8s.bin 0x6000
 
 
 
 
 echo Building config.bin for board Zyber8S-office
-python.exe E:\esp\v5.4\esp-idf\components\nvs_flash\nvs_partition_generator\nvs_partition_gen.py generate .\config-zyber8s-office.cvs .\build\config-zyber8s-office.bin 0x6000
+python.exe D:\espidf\v5.4\esp-idf\components\nvs_flash\nvs_partition_generator\nvs_partition_gen.py generate .\config-zyber8s-office.cvs .\build\config-zyber8s-office.bin 0x6000
 
 
 

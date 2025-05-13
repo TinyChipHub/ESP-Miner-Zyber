@@ -63,6 +63,7 @@ void cleanQueue(GlobalState * GLOBAL_STATE) {
     pthread_mutex_lock(&GLOBAL_STATE->valid_jobs_lock);
     ASIC_jobs_queue_clear(&GLOBAL_STATE->ASIC_jobs_queue);
     for (int i = 0; i < 128; i = i + 4) {
+        ESP_LOGI(TAG, "Cleanning quehe: %d",i);
         GLOBAL_STATE->valid_jobs[i] = 0;
     }
     pthread_mutex_unlock(&GLOBAL_STATE->valid_jobs_lock);
@@ -199,6 +200,11 @@ void stratum_task(void * pvParameters)
     xTaskCreate(stratum_primary_heartbeat, "stratum primary heartbeat", 8192, pvParameters, 1, NULL);
 
     ESP_LOGI(TAG, "Opening connection to pool: %s:%d", stratum_url, port);
+    while(!GLOBAL_STATE->queue_initalized){
+        ESP_LOGI(TAG, "Waiting for jobs queres to init....");
+        vTaskDelay(1000 / portTICK_PERIOD_MS);
+        continue;
+    }
     while (1) {
         if (!is_wifi_connected()) {
             ESP_LOGI(TAG, "WiFi disconnected, attempting to reconnect...");
