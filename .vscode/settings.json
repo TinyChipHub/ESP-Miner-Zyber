@@ -59,7 +59,7 @@
         "thermal.h": "c",
         "xlocale": "c",
         "chips_monitor_task.h": "c",
-        "esp_wifi.h": "c"
+        "esp_wifi.h": "c",
         "serial.h": "c"
     },
     "editor.formatOnSave": false,

@@ -68,6 +68,10 @@ static const char * TAG = "bm1370Module";
 
 static task_result result;
 
+static float current_frequency = 56.25;
+
+static int norceCount=0;
+
 /// @brief
 /// @param ftdi
 /// @param header
@@ -252,7 +256,7 @@ static uint8_t _send_init(uint64_t frequency, uint16_t asic_count)
     // _send_simple(init7, 7);
 
     // split the chip address space evenly
-    uint8_t address_interval = (uint8_t) (256 / chip_counter);
+    uint8_t address_interval = 16;
     for (uint8_t i = 0; i < chip_counter; i++) {
         _set_chip_address(i * address_interval);
         // unsigned char init8[7] = {0x55, 0xAA, 0x40, 0x05, 0x00, 0x00, 0x1C};
@@ -480,6 +484,25 @@ task_result * BM1370_process_work(void * pvParameters)
     result.job_id = job_id;
     result.nonce = asic_result.nonce;
     result.rolled_version = rolled_version;
+
+    uint8_t asic_nr = ((asic_result.nonce & 0x0000fc00)>>9)/16;
+    //ESP_LOGW(TAG,"ASIC NUM: %d", (int)asic_nr/16);
+
+    //uint8_t asic_nr = (asic_result->nonce & 0x0000fc00)>>10;
+    ESP_LOGI(TAG, "Chip: %d, Job ID: %02X, Core: %d/%d, Ver: %08" PRIX32, asic_nr+1, job_id, core_id, small_core_id, version_bits);
+    GLOBAL_STATE->chip_submit[asic_nr]= GLOBAL_STATE->chip_submit[asic_nr]+1;
+    if(norceCount%20==0){
+        sprintf(GLOBAL_STATE->chip_submit_srt,"[%lu, %lu, %lu, %lu, %lu, %lu, %lu, %lu]",
+            GLOBAL_STATE->chip_submit[0], GLOBAL_STATE->chip_submit[1], GLOBAL_STATE->chip_submit[2],
+            GLOBAL_STATE->chip_submit[3], GLOBAL_STATE->chip_submit[4], GLOBAL_STATE->chip_submit[5],
+            GLOBAL_STATE->chip_submit[6],GLOBAL_STATE->chip_submit[7]);
+        ESP_LOGI(TAG, "Asic Submit Count: %s", (char*)(GLOBAL_STATE->chip_submit_srt));
+    }
+    norceCount++;
+    if(norceCount==1000000){
+        for(int a=0;a<8;a++)
+                GLOBAL_STATE->chip_submit[a]=0;
+    }
 
     return &result;
 }
