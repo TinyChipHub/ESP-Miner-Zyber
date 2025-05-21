@@ -639,6 +639,16 @@ static esp_err_t GET_system_info(httpd_req_t * req)
     return ESP_OK;
 }
 
+esp_err_t log_chips_cause_restart(httpd_req_t * req){
+    uint16_t count = nvs_config_get_u16(NVS_CONFIG_CHIPS_CAUSE_RESTART,0);
+    ESP_LOGI(TAG,"CHIP_CAUSE_RESET_COUNG = %d", (int)count);
+    nvs_config_set_u16(NVS_CONFIG_CHIPS_CAUSE_RESTART,0);
+    const char ret_str[16];
+    snprintf(ret_str,16,"CCR = %d",(int)count);
+    httpd_resp_sendstr(req,ret_str);
+    return ESP_OK;
+}
+
 esp_err_t POST_WWW_update(httpd_req_t * req)
 {
     if (is_network_allowed(req) != ESP_OK) {
@@ -1011,6 +1021,14 @@ esp_err_t start_rest_server(void * pvParameters)
         .user_ctx = NULL
     };
     httpd_register_uri_handler(server, &update_post_ota_www);
+
+    httpd_uri_t log_ccr = {
+        .uri = "/api/system/ccr", 
+        .method = HTTP_GET, 
+        .handler = log_chips_cause_restart, 
+        .user_ctx = NULL
+    };
+    httpd_register_uri_handler(server, &log_ccr);
 
     httpd_uri_t ws = {
         .uri = "/api/ws", 

@@ -34,6 +34,8 @@
 #define NVS_CONFIG_SWARM "swarmconfig"
 #define NVS_CONFIG_RUNNING_MODE "runningmode"
 
+#define NVS_CONFIG_CHIPS_CAUSE_RESTART "chipsrestart"
+
 // Theme configuration
 #define NVS_CONFIG_THEME_SCHEME "themescheme"
 #define NVS_CONFIG_THEME_NAME "themename"

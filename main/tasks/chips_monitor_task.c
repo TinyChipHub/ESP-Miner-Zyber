@@ -10,16 +10,18 @@
 #include "asic.h"
 #include "serial.h"
 #include "chips_monitor_task.h"
-
+#include "nvs_config.h"
 
 static const char *TAG = "chip_monitor_task";
-static uint32_t reset_count = 0;
+static uint16_t reset_count = 0;
 static uint32_t temp_chips_count[8];
 static uint32_t temp_chips_fail_count[8];
 
 void reset_all_chip(void * pvParameters){
     GlobalState *GLOBAL_STATE = (GlobalState *)pvParameters;
     reset_count++;
+
+    nvs_config_set_u16(NVS_CONFIG_CHIPS_CAUSE_RESTART,nvs_config_get_u16(NVS_CONFIG_CHIPS_CAUSE_RESTART,0)+1);
 
     vTaskSuspend(GLOBAL_STATE->asic_result_task_h);
     vTaskSuspend(GLOBAL_STATE->asic_task_h);
@@ -52,11 +54,11 @@ void chip_monitor_task(void *pvParameters){
     ESP_LOGI(TAG, "Starting chips fail detection task");
     while(1){
         if(reset_count>0){
-            ESP_LOGW(TAG, "Chips reset attemp = %lu", reset_count);
-            // if(reset_count>10){
-            //     ESP_LOGE(TAG, "Chips reset attemp > 10, It is better to restart the miner again");
-            //     exit(EXIT_FAILURE);
-            // }
+            ESP_LOGI(TAG, "Chips reset attemp = %u", reset_count);
+            if(reset_count>50){
+                ESP_LOGW(TAG, "Chips reset attemp > 50, It is better to restart the miner again");
+                exit(EXIT_FAILURE);
+            }
         }
 
         if(!GLOBAL_STATE->is_chips_fail_detected&&GLOBAL_STATE->ASIC_initalized){
@@ -82,8 +84,7 @@ void chip_monitor_task(void *pvParameters){
             GLOBAL_STATE->ASIC_initalized=false;
             reset_all_chip(GLOBAL_STATE);
             GLOBAL_STATE->is_chips_fail_detected=false;
-        }else{
-            vTaskDelay(5000/ portTICK_PERIOD_MS);
         }
+        vTaskDelay(5000/ portTICK_PERIOD_MS);
     }
 }

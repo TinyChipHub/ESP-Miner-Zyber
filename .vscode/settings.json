@@ -60,7 +60,8 @@
         "xlocale": "c",
         "chips_monitor_task.h": "c",
         "esp_wifi.h": "c",
-        "serial.h": "c"
+        "serial.h": "c",
+        "algorithm": "c"
     },
     "editor.formatOnSave": false,
     "cSpell.words": [
