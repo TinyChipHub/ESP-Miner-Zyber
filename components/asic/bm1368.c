@@ -367,7 +367,7 @@ task_result * BM1368_process_work(void * pvParameters)
     //ESP_LOGW(TAG,"ASIC NUM: %d", (int)asic_nr/16);
 
     //uint8_t asic_nr = (asic_result->nonce & 0x0000fc00)>>10;
-    ESP_LOGI(TAG, "Chip: %d, Job ID: %02X, Core: %d/%d, Ver: %08" PRIX32, asic_nr+1, job_id, core_id, small_core_id, version_bits);
+    //ESP_LOGI(TAG, "Chip: %d, Job ID: %02X, Core: %d/%d, Ver: %08" PRIX32, asic_nr+1, job_id, core_id, small_core_id, version_bits);
     GLOBAL_STATE->chip_submit[asic_nr]= GLOBAL_STATE->chip_submit[asic_nr]+1;
     if(norceCount%20==0){
         sprintf(GLOBAL_STATE->chip_submit_srt,"[%lu, %lu, %lu, %lu, %lu, %lu, %lu, %lu]",
