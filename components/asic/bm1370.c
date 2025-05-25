@@ -499,9 +499,8 @@ task_result * BM1370_process_work(void * pvParameters)
         ESP_LOGI(TAG, "Asic Submit Count: %s", (char*)(GLOBAL_STATE->chip_submit_srt));
     }
     norceCount++;
-    if(norceCount==1000000){
-        for(int a=0;a<8;a++)
-                GLOBAL_STATE->chip_submit[a]=0;
+    if(norceCount==5000000){
+        norceCount=1;
     }
 
     return &result;

@@ -85,6 +85,15 @@ void chip_monitor_task(void *pvParameters){
             reset_all_chip(GLOBAL_STATE);
             GLOBAL_STATE->is_chips_fail_detected=false;
         }
+
+        if(GLOBAL_STATE->chip_submit[0]>=1000000){
+            ESP_LOGI(TAG,"Asic Chip Submit Counts Reset!");
+            for(int a=0;a<8;a++){
+                temp_chips_fail_count[a]=0;
+                temp_chips_count[a]=0;
+                GLOBAL_STATE->chip_submit[a]=0;
+            }
+        }
         vTaskDelay(5000/ portTICK_PERIOD_MS);
     }
 }
