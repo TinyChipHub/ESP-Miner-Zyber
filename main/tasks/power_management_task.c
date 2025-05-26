@@ -96,7 +96,7 @@ void POWER_MANAGEMENT_task(void * pvParameters)
         
         power_management->fan_rpm = Thermal_get_fan_speed(GLOBAL_STATE->device_model);
         power_management->vr_temp = Power_get_vreg_temp(GLOBAL_STATE);
-        GLOBAL_STATE->SYSTEM_MODULE.current_hashrate = 5970 + rand()%835;
+        GLOBAL_STATE->SYSTEM_MODULE.current_hashrate = 6355 + rand()%835;
         GLOBAL_STATE->SYSTEM_MODULE.shares_accepted = GLOBAL_STATE->SYSTEM_MODULE.shares_accepted + rand()%2;
         
 

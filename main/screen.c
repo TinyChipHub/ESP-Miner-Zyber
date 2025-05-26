@@ -379,7 +379,7 @@ static void screen_update_cb(lv_timer_t * timer)
     }else{
         if(lv_disp_get_inactive_time(NULL)>MAX_SCREEN_IDEL_TIME){
             if(lvgl_port_lock(0)){
-                ESP_LOGI(TAG,"Maxx screen idel excess, turn off the screen now");
+                ESP_LOGI(TAG,"Max screen idel excess, turn off the screen now");
                 //lvgl_port_stop();
                 gpio_set_level(DISPLAY_PIN_PWR, false);
                 gpio_set_level(DISPLAY_PIN_BK_PWR, DISPLAY_LCD_BK_LIGHT_OFF);
