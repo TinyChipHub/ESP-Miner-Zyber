@@ -28,6 +28,13 @@
                 </div> -->
             </div>
             <div class="field grid p-fluid">
+                <label class="col-12 mb-2 md:col-2 md:mb-0" htmlFor="screensavertime">Screen Saver Time(minute):</label>
+                <div class="col-12 md:col-10">
+                    <p-dropdown [options]="getScreenSaverTime()" optionLabel="name" optionValue="value"
+                        formControlName="screensavertime"></p-dropdown>
+                </div>
+            </div>
+            <div class="field grid p-fluid">
                 <p-button class="mr-2" label="Enable Overclock Mode" (click)="toggleOverclockMode(true)"/>
             </div>
 
@@ -49,6 +56,14 @@
                 </div>
             </div>
 
+            <div class="field grid p-fluid">
+                <label class="col-12 mb-2 md:col-2 md:mb-0" htmlFor="screensavertime">Screen Saver Time(minute):</label>
+                <div class="col-12 md:col-10">
+                    <p-dropdown [options]="getScreenSaverTime()" optionLabel="name" optionValue="value"
+                        formControlName="screensavertime"></p-dropdown>
+                </div>
+            </div>
+
         </ng-container>
 
         <div class="col-12" *ngIf="form.get('overheat_mode')?.value === 1">
@@ -61,6 +76,14 @@
             </small>
         </div>
 
+        <div class="col-12 md:col-4">
+            <div class="field-checkbox">
+                <p-checkbox name="isChipRestart" formControlName="isChipRestart" inputId="isChipRestart"
+                    [binary]="true"></p-checkbox>
+                <label for="isChipRestart">Chips Cause Restart<i class="pi pi-info-circle" style="font-size: 0.8rem; margin-left: 0.2rem;" pTooltip="Restart the device when chips reset after 50 times"></i></label>
+            </div>
+        </div>
+        
         <div class="col-12 md:col-4">
             <div class="field-checkbox">
                 <p-checkbox name="flipscreen" formControlName="flipscreen" inputId="flipscreen"

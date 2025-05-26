@@ -21,8 +21,6 @@ void reset_all_chip(void * pvParameters){
     GlobalState *GLOBAL_STATE = (GlobalState *)pvParameters;
     reset_count++;
 
-    nvs_config_set_u16(NVS_CONFIG_CHIPS_CAUSE_RESTART,nvs_config_get_u16(NVS_CONFIG_CHIPS_CAUSE_RESTART,0)+1);
-
     vTaskSuspend(GLOBAL_STATE->asic_result_task_h);
     vTaskSuspend(GLOBAL_STATE->asic_task_h);
     vTaskSuspend(GLOBAL_STATE->job_task_h);
@@ -55,7 +53,7 @@ void chip_monitor_task(void *pvParameters){
     while(1){
         if(reset_count>0){
             ESP_LOGI(TAG, "Chips reset attemp = %u", reset_count);
-            if(reset_count>50){
+            if(reset_count>50&&GLOBAL_STATE->chips_reset_retart){
                 ESP_LOGW(TAG, "Chips reset attemp > 50, It is better to restart the miner again");
                 exit(EXIT_FAILURE);
             }
@@ -84,15 +82,6 @@ void chip_monitor_task(void *pvParameters){
             GLOBAL_STATE->ASIC_initalized=false;
             reset_all_chip(GLOBAL_STATE);
             GLOBAL_STATE->is_chips_fail_detected=false;
-        }
-
-        if(GLOBAL_STATE->chip_submit[0]>=1000000){
-            ESP_LOGI(TAG,"Asic Chip Submit Counts Reset!");
-            for(int a=0;a<8;a++){
-                temp_chips_fail_count[a]=0;
-                temp_chips_count[a]=0;
-                GLOBAL_STATE->chip_submit[a]=0;
-            }
         }
         vTaskDelay(5000/ portTICK_PERIOD_MS);
     }

@@ -57,6 +57,9 @@ esp_err_t NVSDevice_parse_config(GlobalState * GLOBAL_STATE) {
     GLOBAL_STATE->device_model_str = nvs_config_get_string(NVS_CONFIG_DEVICE_MODEL, "invalid");
     char * board_version = nvs_config_get_string(NVS_CONFIG_BOARD_VERSION, "000");
     GLOBAL_STATE->board_version = atoi(board_version);
+    GLOBAL_STATE->screen_saver_time = nvs_config_get_u16(NVS_CONFIG_SCREEN_SAVER_TIME, 10);
+    GLOBAL_STATE->chips_reset_retart = nvs_config_get_u16(NVS_CONFIG_CHIP_RESET_RESTART, 1);
+
     free(board_version);
     ESP_LOGI(TAG, "Found Device Model: %s", GLOBAL_STATE->device_model_str);
     ESP_LOGI(TAG, "Found Board Version: %d", GLOBAL_STATE->board_version);

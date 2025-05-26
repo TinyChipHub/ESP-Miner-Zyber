@@ -22,8 +22,8 @@ esp_err_t Thermal_set_fan_percent(DeviceModel device_model, float fan_percent, f
     switch (device_model) {
         case DEVICE_ZYBER8S:
         case DEVICE_ZYBER8G:
-            EMC2302_set_fan_speed(0,fan_percent);
-            EMC2302_set_fan_speed(1,beneath_fan_percent);  //We set the rear fan to 85% fix rate
+            EMC2302_set_fan_speed(1,fan_percent);
+            EMC2302_set_fan_speed(0,beneath_fan_percent);  //We set the rear fan to 85% fix rate
             break;
         default:
     }

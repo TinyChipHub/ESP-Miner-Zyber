@@ -460,6 +460,10 @@ static esp_err_t PATCH_update_settings(httpd_req_t * req)
     if ((item = cJSON_GetObjectItem(root, "flipscreen")) != NULL) {
         nvs_config_set_u16(NVS_CONFIG_FLIP_SCREEN, item->valueint);
     }
+    if ((item = cJSON_GetObjectItem(root, "isChipRestart")) != NULL) {
+        nvs_config_set_u16(NVS_CONFIG_CHIP_RESET_RESTART, item->valueint);
+        GLOBAL_STATE->chips_reset_retart = item->valueint;
+    }
     if ((item = cJSON_GetObjectItem(root, "overheat_mode")) != NULL) {
         nvs_config_set_u16(NVS_CONFIG_OVERHEAT_MODE, 0);
     }
@@ -483,6 +487,10 @@ static esp_err_t PATCH_update_settings(httpd_req_t * req)
     }
     if ((item = cJSON_GetObjectItem(root, "runningMode")) != NULL) {
         nvs_config_set_u16(NVS_CONFIG_RUNNING_MODE, item->valueint);
+    }
+    if ((item = cJSON_GetObjectItem(root, "screensavertime")) != NULL) {
+        nvs_config_set_u16(NVS_CONFIG_SCREEN_SAVER_TIME, item->valueint);
+        GLOBAL_STATE->screen_saver_time = item->valueint;
     }
 
     cJSON_Delete(root);
@@ -623,6 +631,8 @@ static esp_err_t GET_system_info(httpd_req_t * req)
         cJSON_AddStringToObject(root, "power_fault", VCORE_get_fault_string(GLOBAL_STATE));
     }
     cJSON_AddStringToObject(root,"chipSubmitStr",GLOBAL_STATE->chip_submit_srt);
+    cJSON_AddNumberToObject(root, "screensavertime", GLOBAL_STATE->screen_saver_time);
+    cJSON_AddNumberToObject(root, "isChipRestart", GLOBAL_STATE->chips_reset_retart);
 
     free(ssid);
     free(hostname);
@@ -636,16 +646,6 @@ static esp_err_t GET_system_info(httpd_req_t * req)
     httpd_resp_sendstr(req, sys_info);
     free((char *)sys_info);
     cJSON_Delete(root);
-    return ESP_OK;
-}
-
-esp_err_t log_chips_cause_restart(httpd_req_t * req){
-    uint16_t count = nvs_config_get_u16(NVS_CONFIG_CHIPS_CAUSE_RESTART,0);
-    ESP_LOGI(TAG,"CHIP_CAUSE_RESET_COUNG = %d", (int)count);
-    nvs_config_set_u16(NVS_CONFIG_CHIPS_CAUSE_RESTART,0);
-    const char ret_str[16];
-    snprintf(ret_str,16,"CCR = %d",(int)count);
-    httpd_resp_sendstr(req,ret_str);
     return ESP_OK;
 }
 
@@ -1021,14 +1021,6 @@ esp_err_t start_rest_server(void * pvParameters)
         .user_ctx = NULL
     };
     httpd_register_uri_handler(server, &update_post_ota_www);
-
-    httpd_uri_t log_ccr = {
-        .uri = "/api/system/ccr", 
-        .method = HTTP_GET, 
-        .handler = log_chips_cause_restart, 
-        .user_ctx = NULL
-    };
-    httpd_register_uri_handler(server, &log_ccr);
 
     httpd_uri_t ws = {
         .uri = "/api/ws", 

@@ -80,8 +80,6 @@ static bool found_block;
 #define TEXT_GREEN 0x058a37
 #define TEXT_YELLOW 0xf5cf39
 
-#define MAX_SCREEN_IDEL_TIME 300000 //5 mins
-
 /* Fonts */
 extern const lv_font_t font_XinYin_reg10;
 extern const lv_font_t font_XinYin_reg12;
@@ -375,10 +373,11 @@ static void screen_update_cb(lv_timer_t * timer)
 {
     if (display_off){
         return ;
-    }else{
-        if(lv_disp_get_inactive_time(NULL)>MAX_SCREEN_IDEL_TIME){
+    }else if(GLOBAL_STATE->screen_saver_time>0){
+        if(lv_disp_get_inactive_time(NULL)>(GLOBAL_STATE->screen_saver_time)*60*1000){
+            
             if(lvgl_port_lock(0)){
-                ESP_LOGI(TAG,"Maxx screen idel excess, turn off the screen now");
+                ESP_LOGI(TAG,"Max screen idel excess, turn off the screen now");
                 //lvgl_port_stop();
                 gpio_set_level(DISPLAY_PIN_PWR, false);
                 gpio_set_level(DISPLAY_PIN_BK_PWR, DISPLAY_LCD_BK_LIGHT_OFF);

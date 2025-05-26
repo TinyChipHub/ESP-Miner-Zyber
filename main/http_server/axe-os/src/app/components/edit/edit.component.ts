@@ -30,6 +30,15 @@ export class EditComponent implements OnInit, OnDestroy {
 
   @Input() uri = '';
 
+  public ScreenSaverTime = [
+    { name: 'Disabled', value: 0 },
+    { name: '5 minute', value: 5 },
+    { name: '10 minutes', value: 10 },
+    { name: '15 minutes', value: 15 },
+    { name: '30 minutes', value: 30 },
+    { name: '60 minutes', value: 60 }
+  ];
+
   public BM1397DropdownFrequency = [
     { name: '400', value: 400 },
     { name: '425 (default)', value: 425 },
@@ -194,7 +203,9 @@ export class EditComponent implements OnInit, OnDestroy {
           invertfanpolarity: [info.invertfanpolarity == 1, [Validators.required]],
           fanspeed: [info.fanspeed, [Validators.required]],
           beneathfanspeed:[info.beneathfanspeed,[Validators.required]],
-          overheat_mode: [info.overheat_mode, [Validators.required]]
+          overheat_mode: [info.overheat_mode, [Validators.required]],
+          screensavertime: [info.screensavertime, [Validators.required]],
+          isChipRestart: [info.isChipRestart==1, [Validators.required]],
         });
 
         this.form.controls['autofanspeed'].valueChanges.pipe(
@@ -292,6 +303,26 @@ export class EditComponent implements OnInit, OnDestroy {
           this.toastr.error(errorMessage, 'Error');
         }
       });
+  }
+
+  getScreenSaverTime() {
+    // Get base screen saver options
+    let options = [...this.ScreenSaverTime];
+
+    // Get current screen saver value from form
+    const currentScreenSaver = this.form?.get('screensaver')?.value;
+
+    // If current screen saver exists and isn't in the options
+    if (currentScreenSaver && !options.some(opt => opt.value === currentScreenSaver)) {
+        options.push({
+            name: `${currentScreenSaver} (Custom)`,
+            value: currentScreenSaver
+        });
+        // Sort options by value
+        options.sort((a, b) => a.value - b.value);
+    }
+
+    return options;
   }
 
   getDropdownFrequency() {

@@ -22,3 +22,5 @@ fanspeed,data,u16,75
 beneathfanspeed,data,u16,75
 selftest,data,u16,0
 runningmode,data,u16,2
+screensavertime,data,u16,10
+chiprrestart,data,u16,1

@@ -158,6 +158,9 @@ typedef struct
     TaskHandle_t asic_task_h;
     TaskHandle_t asic_result_task_h;
     bool is_chips_fail_detected;
+    bool chips_reset_retart;
+    uint16_t screen_saver_time;
+
 } GlobalState;
 
 #endif /* GLOBAL_STATE_H_ */

@@ -71,6 +71,8 @@ export class SystemService {
           overheat_mode: 0,
           chipSubmitStr: "",
           runningMode: 1,
+          screensavertime: 10,
+          isChipRestart: 1,
         }
       ).pipe(delay(1000));
     }

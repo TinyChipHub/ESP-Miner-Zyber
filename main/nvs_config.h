@@ -33,8 +33,8 @@
 #define NVS_CONFIG_OVERCLOCK_ENABLED "oc_enabled"
 #define NVS_CONFIG_SWARM "swarmconfig"
 #define NVS_CONFIG_RUNNING_MODE "runningmode"
-
-#define NVS_CONFIG_CHIPS_CAUSE_RESTART "chipsrestart"
+#define NVS_CONFIG_SCREEN_SAVER_TIME "screensavertime"
+#define NVS_CONFIG_CHIP_RESET_RESTART "chiprrestart"
 
 // Theme configuration
 #define NVS_CONFIG_THEME_SCHEME "themescheme"

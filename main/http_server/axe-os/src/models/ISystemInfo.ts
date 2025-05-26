@@ -58,4 +58,6 @@ export interface ISystemInfo {
     overclockEnabled?: number,
     chipSubmitStr: string,
     runningMode: number,
+    screensavertime: number,
+    isChipRestart: number,
 }
