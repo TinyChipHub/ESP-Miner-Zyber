@@ -11,6 +11,7 @@
 
 // max power settings
 #define ZYBER8S_MAX_POWER 180 //Watts
+#define ZYBER8G_MAX_POWER 276 //Watts
 
 // nominal voltage settings
 #define NOMINAL_VOLTAGE_5 5 //volts
@@ -36,7 +37,7 @@ float Power_get_max_settings(GlobalState * GLOBAL_STATE) {
         case DEVICE_ZYBER8S:
             return ZYBER8S_MAX_POWER;
         default:
-            return ZYBER8S_MAX_POWER;
+            return ZYBER8G_MAX_POWER;
     }
 }
 

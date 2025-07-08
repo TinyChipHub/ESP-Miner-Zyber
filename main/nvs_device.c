@@ -14,14 +14,14 @@ static const char * TAG = "nvs_device";
 
 static RunningModeSettings ZYBER8S_SETTINGS = {
     {490,1166},
-    {550,1200},
-    {600,1250},
+    {575,1180},
+    {600,1200},
 };
 
 static RunningModeSettings ZYBER8G_SETTINGS = {
     {525,1150},
-    {600,1180},
-    {650,1230},
+    {600,1150},
+    {625,1170},
 };
 
 

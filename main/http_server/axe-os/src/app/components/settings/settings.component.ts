@@ -30,6 +30,8 @@ export class SettingsComponent {
 
   public info$: Observable<any>;
 
+  public boardVersion: string = '';
+
   @ViewChild('firmwareUpload') firmwareUpload!: FileUpload;
   @ViewChild('websiteUpload') websiteUpload!: FileUpload;
 
@@ -53,6 +55,7 @@ export class SettingsComponent {
 
       this.info$.pipe(this.loadingService.lockUIUntilComplete())
       .subscribe(info => {
+        this.boardVersion = info.boardVersion;
         this.ASICModel = info.ASICModel;
         this.form = this.fb.group({
           flipscreen: [info.flipscreen == 1],
@@ -121,13 +124,17 @@ export class SettingsComponent {
   otaUpdate(event: FileUploadHandlerEvent) {
     const file = event.files[0];
     this.firmwareUpload.clear(); // clear the file upload component
+    
+    if (this.boardVersion === '1100' && file.name !== 'esp-miner-zyber8g.bin') {
+        this.toastrService.error('Incorrect file, looking for esp-miner-zyber8g.bin.', 'Error');
+        return;  
+      }
+      if(this.boardVersion === '1000' && file.name !== 'esp-miner-zyber8s.bin') {
+        this.toastrService.error('Incorrect file, looking for esp-miner-zyber8s.bin.', 'Error');
+        return;
+      }
 
-    if (file.name != 'esp-miner.bin') {
-      this.toastrService.error('Incorrect file, looking for esp-miner.bin.', 'Error');
-      return;
-    }
-
-    this.systemService.performOTAUpdate(file)
+      this.systemService.performOTAUpdate(file)
       .pipe(this.loadingService.lockUIUntilComplete())
       .subscribe({
         next: (event) => {

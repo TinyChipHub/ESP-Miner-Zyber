@@ -4,14 +4,14 @@ hostname,data,string,zyber8s
 wifissid,data,string,Cristalize2.4
 wifipass,data,string,Xaiten1678
 stratumurl,data,string,xnas.xaiten.com
-stratumport,data,u16,14400
-stratumuser,data,string,1ER7ciDN5iL9Nr4r9XWiCJYSGA9ERJffkD.zyber8s
+stratumport,data,u16,8868
+stratumuser,data,string,ecash:qrpjl3epd2krkw6ge9edrmrmrpxeth03ssfzzvmdsg.zyber8g
 stratumpass,data,string,x
 fbstratumurl,data,string,xnas.xaiten.com
 fbstratumport,data,u16,14400
 fbstratumuser,data,string,1ER7ciDN5iL9Nr4r9XWiCJYSGA9ERJffkD.zyber8s
 asicfrequency,data,u16,600
-asicvoltage,data,u16,1250
+asicvoltage,data,u16,1200
 asicmodel,data,string,BM1368
 devicemodel,data,string,zyber8s
 boardversion,data,string,1000

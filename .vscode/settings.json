@@ -61,7 +61,8 @@
         "chips_monitor_task.h": "c",
         "esp_wifi.h": "c",
         "serial.h": "c",
-        "algorithm": "c"
+        "algorithm": "c",
+        "lvgl.h": "c"
     },
     "editor.formatOnSave": false,
     "cSpell.words": [

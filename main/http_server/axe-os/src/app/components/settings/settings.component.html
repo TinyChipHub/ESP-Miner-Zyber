@@ -20,19 +20,34 @@
             <h5>Current Version: {{(info$ | async)?.version}}<a class="ml-3" href="https://tinychiphub.com/blogs/technical/axeos-critical-updates-log-zyber-series-firmware-release-notes-ongoing-updates-2026" target="_blank" style="text-decoration: none;">
                 <p-button label="Update Logs"></p-button>
             </a></h5>
-            <h6 style="color: red;">Noticed that, Hex and SupraHex should use our firmware. The OSMU firmware may not work for those models at this moment.</h6>
+            <h6 style="color: red;">Noticed that, Zyber's products should use our firmware. The OSMU firmware may not work for those models at this moment.</h6>
             <h2>Latest Release: {{latestRelease.name}}</h2>
 
-            <div *ngFor="let asset of latestRelease.assets">
-                <div *ngIf="asset.name == 'esp-miner.bin'">
-                    <a style="text-decoration: underline;" target="_blank"
-                        [href]="asset.browser_download_url">esp-miner.bin</a>
+            <ng-container *ngIf="boardVersion == '1000'">
+                <div *ngFor="let asset of latestRelease.assets">
+                    <div *ngIf="asset.name == 'esp-miner-zyber8s.bin'">
+                        <a style="text-decoration: underline;" target="_blank"
+                            [href]="asset.browser_download_url">esp-miner-zyber8s.bin</a>
+                    </div>
+                    <div *ngIf="asset.name == 'www.bin'">
+                        <a style="text-decoration: underline;" target="_blank"
+                            [href]="asset.browser_download_url">www.bin</a>
+                    </div>
                 </div>
-                <div *ngIf="asset.name == 'www.bin'">
-                    <a style="text-decoration: underline;" target="_blank"
-                        [href]="asset.browser_download_url">www.bin</a>
+            </ng-container>
+            <ng-container *ngIf="boardVersion == '1100'">
+                <div *ngFor="let asset of latestRelease.assets">
+                    <div *ngIf="asset.name == 'esp-miner-zyber8g.bin'">
+                        <a style="text-decoration: underline;" target="_blank"
+                            [href]="asset.browser_download_url">esp-miner-zyber8g.bin</a>
+                    </div>
+                    <div *ngIf="asset.name == 'www.bin'">
+                        <a style="text-decoration: underline;" target="_blank"
+                            [href]="asset.browser_download_url">www.bin</a>
+                    </div>
                 </div>
-            </div>
+            </ng-container>
+            
         </ng-container>
         </div>
     </div>
@@ -53,7 +68,9 @@
             <p-fileUpload #firmwareUpload [customUpload]="true" mode="basic" accept=".bin" (uploadHandler)="otaUpdate($event)"
                 [auto]="true" chooseLabel="Browse"></p-fileUpload>
 
-            <small>(esp-miner.bin)</small>
+            <small *ngIf="boardVersion == '1000'">(esp-miner-zyber8s.bin)</small>
+            <small *ngIf="boardVersion == '1100'">(esp-miner-zyber8g.bin)</small>
+
         </div>
 
     </div>
