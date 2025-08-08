@@ -58,7 +58,7 @@ static double automatic_fan_speed(float chip_temp, GlobalState * GLOBAL_STATE)
     PowerManagementModule * power_management = &GLOBAL_STATE->POWER_MANAGEMENT_MODULE;
     power_management->fan_perc = result;
     power_management->beneath_fan_perc = result*1.1>100?100:result*1.1;
-    Thermal_set_fan_percent(GLOBAL_STATE->device_model, result/100.0, (result*1.1/100.0)>1?1:result*1.1/100.0);
+    Thermal_set_fan_percent(GLOBAL_STATE->device_model, GLOBAL_STATE->board_version, result/100.0, (result*1.1/100.0)>1?1:result*1.1/100.0);
 
 	return result;
 }
@@ -104,7 +104,7 @@ void POWER_MANAGEMENT_task(void * pvParameters)
             ESP_LOGE(TAG, "OVERHEAT! VR: %fC ASIC %fC", power_management->vr_temp, power_management->chip_temp_avg );
             power_management->fan_perc = 100;
             power_management->beneath_fan_perc = 100;
-            Thermal_set_fan_percent(GLOBAL_STATE->device_model, 1,1);
+            Thermal_set_fan_percent(GLOBAL_STATE->device_model, GLOBAL_STATE->board_version, 1,1);
 
             // Turn off core voltage
             Power_disable(GLOBAL_STATE);
@@ -127,7 +127,7 @@ void POWER_MANAGEMENT_task(void * pvParameters)
             float bfs = (float) nvs_config_get_u16(NVS_CONFIG_BENEATH_FAN_SPEED, 100);
             power_management->fan_perc = fs;
             power_management->beneath_fan_perc = bfs;
-            Thermal_set_fan_percent(GLOBAL_STATE->device_model, (float) fs / 100.0, (float) bfs / 100.0);
+            Thermal_set_fan_percent(GLOBAL_STATE->device_model, GLOBAL_STATE->board_version, (float) fs / 100.0, (float) bfs / 100.0);
         }
 
         // Read the state of plug sense pin

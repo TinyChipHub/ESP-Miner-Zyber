@@ -15,6 +15,6 @@
 bool TMP1075_installed(int);
 uint8_t TMP1075_read_temperature(int);
 float TMP1075_read_temperature_weighted();
-esp_err_t TMP1075_init(void);
+esp_err_t TMP1075_init(bool);
 
 #endif /* TMP1075_H_ */
