@@ -48,7 +48,8 @@ float Thermal_get_chip_temp(GlobalState * GLOBAL_STATE) {
     switch (GLOBAL_STATE->device_model) {
         case DEVICE_ZYBER8S:
         case DEVICE_ZYBER8G:
-            return TMP1075_read_temperature_weighted();
+            //return TMP1075_read_temperature_weighted();
+            return TMP1075_read_temperature(0) + INTERNAL_OFFSET; //TMP1075_read_temperature_weighted() + INTERNAL_OFFSET;
         default:
     }
 

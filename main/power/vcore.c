@@ -17,16 +17,16 @@ static TPS546_CONFIG TPS546_CONFIG_ZYBER = {
     /* vin voltage */
     .TPS546_INIT_VIN_ON = 11.5,
     .TPS546_INIT_VIN_OFF = 11.0,
-    .TPS546_INIT_VIN_UV_WARN_LIMIT = 0, //Set to 0 to ignore. TI Bug in this register
+    .TPS546_INIT_VIN_UV_WARN_LIMIT = 11.5, //Set to 0 to ignore. TI Bug in this register
     .TPS546_INIT_VIN_OV_FAULT_LIMIT = 14.0,
     /* vout voltage */
     .TPS546_INIT_SCALE_LOOP = 0.125,
     .TPS546_INIT_VOUT_MIN = 2.5,
     .TPS546_INIT_VOUT_MAX = 5.5,
-    .TPS546_INIT_VOUT_COMMAND = 3.6,
+    .TPS546_INIT_VOUT_COMMAND = 4.8,
     /* iout current */
     .TPS546_INIT_IOUT_OC_WARN_LIMIT = 80.00, /* A */
-    .TPS546_INIT_IOUT_OC_FAULT_LIMIT = 85.00 /* A */
+    .TPS546_INIT_IOUT_OC_FAULT_LIMIT = 104.00 /* A */
 };
 
 static const char *TAG = "vcore.c";

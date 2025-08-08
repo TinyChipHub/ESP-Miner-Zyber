@@ -15,8 +15,8 @@ static i2c_master_dev_handle_t tmp1075_u8_dev_handle;   //for Hex and SupraHex
  * @return esp_err_t ESP_OK on success, or an error code on failure.
  */
 esp_err_t TMP1075_init(void) {
-    return i2c_bitaxe_add_device(TMP1075_I2CADDR_U7, &tmp1075_u7_dev_handle, TAG) | 
-            i2c_bitaxe_add_device(TMP1075_I2CADDR_U8, &tmp1075_u8_dev_handle, TAG);
+    return i2c_bitaxe_add_device(TMP1075_I2CADDR_U7, &tmp1075_u7_dev_handle, TAG);
+    //|i2c_bitaxe_add_device(TMP1075_I2CADDR_U8, &tmp1075_u8_dev_handle, TAG);
 }
 
 bool TMP1075_installed(int device_index)

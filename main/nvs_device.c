@@ -21,7 +21,7 @@ static RunningModeSettings ZYBER8S_SETTINGS = {
 static RunningModeSettings ZYBER8G_SETTINGS = {
     {525,1150},
     {600,1150},
-    {625,1170},
+    {625,1150},
 };
 
 

@@ -232,7 +232,7 @@ static uint8_t _send_init(uint64_t frequency, uint16_t asic_count)
     unsigned char init3[7] = {0x55, 0xAA, 0x52, 0x05, 0x00, 0x00, 0x0A};
     _send_simple(init3, 7);
 
-    int chip_counter = count_asic_chips(asic_count, BM1370_CHIP_ID, BM1370_CHIP_ID_RESPONSE_LENGTH);
+    int chip_counter = count_asic_chips(11, BM1370_CHIP_ID, BM1370_CHIP_ID_RESPONSE_LENGTH);
 
     if (chip_counter == 0) {
         return 0;
@@ -257,7 +257,7 @@ static uint8_t _send_init(uint64_t frequency, uint16_t asic_count)
 
     // split the chip address space evenly
     uint8_t address_interval = 16;
-    for (uint8_t i = 0; i < chip_counter; i++) {
+    for (uint8_t i = 0; i < 11; i++) {
         _set_chip_address(i * address_interval);
         // unsigned char init8[7] = {0x55, 0xAA, 0x40, 0x05, 0x00, 0x00, 0x1C};
         // _send_simple(init8, 7);
@@ -286,7 +286,7 @@ static uint8_t _send_init(uint64_t frequency, uint16_t asic_count)
     //_send_BM1370((TYPE_CMD | GROUP_ALL | CMD_WRITE), (uint8_t[]){0x00, 0x58, 0x02, 0x11, 0x11, 0x11}, 6, BM1370_SERIALTX_DEBUG); //from S21Pro dump
     
 
-    for (uint8_t i = 0; i < chip_counter; i++) {
+    for (uint8_t i = 0; i < 15; i++) {
         //TX: 55 AA 41 09 00 [A8 00 07 01 F0] 15    // Reg_A8
         unsigned char set_a8_register[6] = {i * address_interval, 0xA8, 0x00, 0x07, 0x01, 0xF0};
         _send_BM1370((TYPE_CMD | GROUP_SINGLE | CMD_WRITE), set_a8_register, 6, BM1370_SERIALTX_DEBUG);
@@ -362,6 +362,8 @@ uint8_t BM1370_init(uint64_t frequency, uint16_t asic_count)
 
     // reset the bm1370
     _reset();
+
+    vTaskDelay(3000 / portTICK_PERIOD_MS);
 
     return _send_init(frequency, asic_count);
 }
@@ -490,18 +492,18 @@ task_result * BM1370_process_work(void * pvParameters)
 
     //uint8_t asic_nr = (asic_result->nonce & 0x0000fc00)>>10;
     ESP_LOGI(TAG, "Chip: %d, Job ID: %02X, Core: %d/%d, Ver: %08" PRIX32, asic_nr+1, job_id, core_id, small_core_id, version_bits);
-    GLOBAL_STATE->chip_submit[asic_nr]= GLOBAL_STATE->chip_submit[asic_nr]+1;
-    if(norceCount%20==0){
-        sprintf(GLOBAL_STATE->chip_submit_srt,"[%lu, %lu, %lu, %lu, %lu, %lu, %lu, %lu]",
-            GLOBAL_STATE->chip_submit[0], GLOBAL_STATE->chip_submit[1], GLOBAL_STATE->chip_submit[2],
-            GLOBAL_STATE->chip_submit[3], GLOBAL_STATE->chip_submit[4], GLOBAL_STATE->chip_submit[5],
-            GLOBAL_STATE->chip_submit[6],GLOBAL_STATE->chip_submit[7]);
-        ESP_LOGI(TAG, "Asic Submit Count: %s", (char*)(GLOBAL_STATE->chip_submit_srt));
-    }
-    norceCount++;
-    if(norceCount==5000000){
-        norceCount=1;
-    }
+    // GLOBAL_STATE->chip_submit[asic_nr]= GLOBAL_STATE->chip_submit[asic_nr]+1;
+    // if(norceCount%20==0){
+    //     sprintf(GLOBAL_STATE->chip_submit_srt,"[%lu, %lu, %lu, %lu, %lu, %lu, %lu, %lu]",
+    //         GLOBAL_STATE->chip_submit[0], GLOBAL_STATE->chip_submit[1], GLOBAL_STATE->chip_submit[2],
+    //         GLOBAL_STATE->chip_submit[3], GLOBAL_STATE->chip_submit[4], GLOBAL_STATE->chip_submit[5],
+    //         GLOBAL_STATE->chip_submit[6],GLOBAL_STATE->chip_submit[7]);
+    //     ESP_LOGI(TAG, "Asic Submit Count: %s", (char*)(GLOBAL_STATE->chip_submit_srt));
+    // }
+    // norceCount++;
+    // if(norceCount==5000000){
+    //     norceCount=1;
+    // }
 
     return &result;
 }

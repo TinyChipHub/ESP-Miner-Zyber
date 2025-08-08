@@ -21,9 +21,9 @@
 #define OPERATION_OFF 0x00
 #define OPERATION_ON  0x80
 
-#define TPS546_INIT_PHASE 0x00  /* phase */
+#define TPS546_INIT_PHASE 0xFF  /* phase */
 
-#define TPS546_INIT_FREQUENCY 650  /* KHz */
+#define TPS546_INIT_FREQUENCY 525  /* KHz */
 
 typedef struct
 {

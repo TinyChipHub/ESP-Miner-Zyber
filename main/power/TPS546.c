@@ -705,10 +705,11 @@ float TPS546_get_iout(void)
     #endif
 
     //set the phase register back to the default
-    smb_write_byte(PMBUS_PHASE, TPS546_INIT_PHASE);
+        //smb_write_byte(PMBUS_PHASE, TPS546_INIT_PHASE);
 
         return iout;
     }
+    //return iout;
 }
 
 float TPS546_get_vout(void)
