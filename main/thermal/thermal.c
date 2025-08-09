@@ -61,8 +61,8 @@ float Thermal_get_chip_temp(GlobalState * GLOBAL_STATE) {
         case DEVICE_ZYBER8S:
         case DEVICE_ZYBER8G:
             if(GLOBAL_STATE->board_version == 1110){
-                uint8_t intt = EMC2101_get_external_temp();
-                ESP_LOGW(TAG, "External temp: %d", (int)intt);
+                //uint8_t intt = EMC2101_get_external_temp();
+                //ESP_LOGW(TAG, "External temp: %d", (int)intt);
                 return TMP1075_read_temperature(0)+INTERNAL_OFFSET; //TMP1075 is on the front side
             }
             return TMP1075_read_temperature_weighted();

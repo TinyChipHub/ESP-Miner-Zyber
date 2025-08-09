@@ -37,6 +37,7 @@
 #include "TPS546.h"
 #include "theme_api.h"  // Add theme API include
 #include "http_server.h"
+#include "emc2101.h"
 
 static const char * TAG = "http_server";
 static const char * CORS_TAG = "CORS";
@@ -357,6 +358,13 @@ static esp_err_t rest_common_get_handler(httpd_req_t * req)
     ESP_LOGI(TAG, "File sending complete");
     /* Respond with an empty chunk to signal HTTP response completion */
     httpd_resp_send_chunk(req, NULL, 0);
+    return ESP_OK;
+}
+static esp_err_t handle_real_temp_request(httpd_req_t * req){
+
+    uint8_t real_temp = EMC2101_get_external_temp();
+
+    httpd_resp_sendstr(req, cJSON_Print(cJSON_CreateNumber(real_temp)));
     return ESP_OK;
 }
 
@@ -974,6 +982,14 @@ esp_err_t start_rest_server(void * pvParameters)
         .user_ctx = NULL,
     };
     httpd_register_uri_handler(server, &swarm_options_uri);
+
+    httpd_uri_t get_real_temp_uri = {
+        .uri = "/api/realtemp",
+        .method = HTTP_GET,
+        .handler = handle_real_temp_request,
+        .user_ctx = NULL,
+    };
+    httpd_register_uri_handler(server, &get_real_temp_uri);
 
     httpd_uri_t system_restart_uri = {
         .uri = "/api/system/restart", .method = HTTP_POST, 
