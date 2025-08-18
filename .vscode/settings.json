@@ -64,7 +64,7 @@
         "algorithm": "c",
         "lvgl.h": "c"
     },
-    "editor.formatOnSave": false,
+    "editor.formatOnSave": true,
     "cSpell.words": [
         "ssid"
     ],

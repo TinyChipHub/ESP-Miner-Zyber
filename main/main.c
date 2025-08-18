@@ -23,14 +23,14 @@
 #include "asic.h"
 
 static GlobalState GLOBAL_STATE = {
-    .extranonce_str = NULL, 
-    .extranonce_2_len = 0, 
-    .abandon_work = 0, 
+    .extranonce_str = NULL,
+    .extranonce_2_len = 0,
+    .abandon_work = 0,
     .version_mask = 0,
     .ASIC_initalized = false
 };
 
-static const char * TAG = "bitaxe";
+static const char* TAG = "bitaxe";
 
 void app_main(void)
 {
@@ -39,7 +39,8 @@ void app_main(void)
     if (!esp_psram_is_initialized()) {
         ESP_LOGE(TAG, "No PSRAM available on ESP32 device!");
         GLOBAL_STATE.psram_is_available = false;
-    } else {
+    }
+    else {
         GLOBAL_STATE.psram_is_available = true;
     }
 
@@ -54,7 +55,7 @@ void app_main(void)
     ADC_init();
 
     //initialize the ESP32 NVS
-    if (NVSDevice_init() != ESP_OK){
+    if (NVSDevice_init() != ESP_OK) {
         ESP_LOGE(TAG, "Failed to init NVS");
         return;
     }
@@ -81,31 +82,32 @@ void app_main(void)
     SYSTEM_init_system(&GLOBAL_STATE);
 
     // pull the wifi credentials and hostname out of NVS
-    char * wifi_ssid = nvs_config_get_string(NVS_CONFIG_WIFI_SSID, WIFI_SSID);
-    char * wifi_pass = nvs_config_get_string(NVS_CONFIG_WIFI_PASS, WIFI_PASS);
-    char * hostname  = nvs_config_get_string(NVS_CONFIG_HOSTNAME, HOSTNAME);
+    char* wifi_ssid = nvs_config_get_string(NVS_CONFIG_WIFI_SSID, WIFI_SSID);
+    char* wifi_pass = nvs_config_get_string(NVS_CONFIG_WIFI_PASS, WIFI_PASS);
+    char* hostname = nvs_config_get_string(NVS_CONFIG_HOSTNAME, HOSTNAME);
 
     // copy the wifi ssid to the global state
     strncpy(GLOBAL_STATE.SYSTEM_MODULE.ssid, wifi_ssid, sizeof(GLOBAL_STATE.SYSTEM_MODULE.ssid));
-    GLOBAL_STATE.SYSTEM_MODULE.ssid[sizeof(GLOBAL_STATE.SYSTEM_MODULE.ssid)-1] = 0;
+    GLOBAL_STATE.SYSTEM_MODULE.ssid[sizeof(GLOBAL_STATE.SYSTEM_MODULE.ssid) - 1] = 0;
 
     // init AP and connect to wifi
     wifi_init(wifi_ssid, wifi_pass, hostname, GLOBAL_STATE.SYSTEM_MODULE.ip_addr_str);
 
-    generate_ssid(GLOBAL_STATE.SYSTEM_MODULE.mac,GLOBAL_STATE.SYSTEM_MODULE.ap_ssid);
+    generate_ssid(GLOBAL_STATE.SYSTEM_MODULE.mac, GLOBAL_STATE.SYSTEM_MODULE.ap_ssid);
 
     SYSTEM_init_peripherals(&GLOBAL_STATE);
 
-    xTaskCreate(POWER_MANAGEMENT_task, "power management", 8192, (void *) &GLOBAL_STATE, 10, NULL);
+    xTaskCreate(POWER_MANAGEMENT_task, "power management", 8192, (void*)&GLOBAL_STATE, 10, NULL);
 
     //start the API for AxeOS
-    start_rest_server((void *) &GLOBAL_STATE);
+    start_rest_server((void*)&GLOBAL_STATE);
     EventBits_t result_bits = wifi_connect();
 
     if (result_bits & WIFI_CONNECTED_BIT) {
         ESP_LOGI(TAG, "Connected to SSID: %s", wifi_ssid);
         strncpy(GLOBAL_STATE.SYSTEM_MODULE.wifi_status, "Connected!", 20);
-    } else if (result_bits & WIFI_FAIL_BIT) {
+    }
+    else if (result_bits & WIFI_FAIL_BIT) {
         ESP_LOGE(TAG, "Failed to connect to SSID: %s", wifi_ssid);
 
         strncpy(GLOBAL_STATE.SYSTEM_MODULE.wifi_status, "Failed to connect", 20);
@@ -114,7 +116,8 @@ void app_main(void)
         while (1) {
             vTaskDelay(1000 / portTICK_PERIOD_MS);
         }
-    } else {
+    }
+    else {
         ESP_LOGE(TAG, "UNEXPECTED EVENT");
         strncpy(GLOBAL_STATE.SYSTEM_MODULE.wifi_status, "unexpected error", 20);
         // User might be trying to configure with AP, just chill here
@@ -148,36 +151,36 @@ void app_main(void)
 
     GLOBAL_STATE.ASIC_initalized = true;
 
-    xTaskCreate(stratum_task, "stratum admin", 8192, (void *) &GLOBAL_STATE, 5, NULL);
-    xTaskCreate(create_jobs_task, "stratum miner", 8192, (void *) &GLOBAL_STATE, 10, NULL);
-    xTaskCreate(ASIC_task, "asic", 8192, (void *) &GLOBAL_STATE, 10, NULL);
-    xTaskCreate(ASIC_result_task, "asic result", 8192, (void *) &GLOBAL_STATE, 15, NULL);
-    xTaskCreate(chip_monitor_task, "chip monitor result", 8192, (void *) &GLOBAL_STATE, 5, NULL);
+    xTaskCreate(stratum_task, "stratum admin", 8192, (void*)&GLOBAL_STATE, 5, NULL);
+    xTaskCreate(create_jobs_task, "stratum miner", 8192, (void*)&GLOBAL_STATE, 10, NULL);
+    xTaskCreate(ASIC_task, "asic", 8192, (void*)&GLOBAL_STATE, 10, NULL);
+    xTaskCreate(ASIC_result_task, "asic result", 8192, (void*)&GLOBAL_STATE, 15, NULL);
+    xTaskCreate(chip_monitor_task, "chip monitor result", 8192, (void*)&GLOBAL_STATE, 5, NULL);
 }
 
 void MINER_set_wifi_status(wifi_status_t status, int retry_count, int reason)
 {
-    switch(status) {
-        case WIFI_CONNECTING:
-            snprintf(GLOBAL_STATE.SYSTEM_MODULE.wifi_status, 20, "Connecting...");
+    switch (status) {
+    case WIFI_CONNECTING:
+        snprintf(GLOBAL_STATE.SYSTEM_MODULE.wifi_status, 20, "Connecting...");
+        return;
+    case WIFI_CONNECTED:
+        snprintf(GLOBAL_STATE.SYSTEM_MODULE.wifi_status, 20, "Connected!");
+        return;
+    case WIFI_RETRYING:
+        // See https://github.com/espressif/esp-idf/blob/master/components/esp_wifi/include/esp_wifi_types_generic.h for codes
+        switch (reason) {
+        case 201:
+            snprintf(GLOBAL_STATE.SYSTEM_MODULE.wifi_status, 20, "No AP found (%d)", retry_count);
             return;
-        case WIFI_CONNECTED:
-            snprintf(GLOBAL_STATE.SYSTEM_MODULE.wifi_status, 20, "Connected!");
+        case 15:
+        case 205:
+            snprintf(GLOBAL_STATE.SYSTEM_MODULE.wifi_status, 20, "Password error (%d)", retry_count);
             return;
-        case WIFI_RETRYING:
-            // See https://github.com/espressif/esp-idf/blob/master/components/esp_wifi/include/esp_wifi_types_generic.h for codes
-            switch(reason) {
-                case 201:
-                    snprintf(GLOBAL_STATE.SYSTEM_MODULE.wifi_status, 20, "No AP found (%d)", retry_count);
-                    return;
-                case 15:
-                case 205:
-                    snprintf(GLOBAL_STATE.SYSTEM_MODULE.wifi_status, 20, "Password error (%d)", retry_count);
-                    return;
-                default:
-                    snprintf(GLOBAL_STATE.SYSTEM_MODULE.wifi_status, 20, "Error %d (%d)", reason, retry_count);
-                    return;
-            }
+        default:
+            snprintf(GLOBAL_STATE.SYSTEM_MODULE.wifi_status, 20, "Error %d (%d)", reason, retry_count);
+            return;
+        }
     }
     ESP_LOGW(TAG, "Unknown status: %d", status);
 }
