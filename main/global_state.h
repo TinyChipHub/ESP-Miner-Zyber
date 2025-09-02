@@ -1,18 +1,18 @@
 #ifndef GLOBAL_STATE_H_
 #define GLOBAL_STATE_H_
 
-#include <stdbool.h>
-#include <stdint.h>
 #include "asic_task.h"
-#include "bm1370.h"
-#include "bm1368.h"
 #include "bm1366.h"
+#include "bm1368.h"
+#include "bm1370.h"
 #include "bm1397.h"
 #include "common.h"
 #include "power_management_task.h"
 #include "serial.h"
 #include "stratum_api.h"
 #include "work_queue.h"
+#include <stdbool.h>
+#include <stdint.h>
 
 #define STRATUM_USER CONFIG_STRATUM_USER
 #define FALLBACK_STRATUM_USER CONFIG_FALLBACK_STRATUM_USER
@@ -25,6 +25,7 @@ typedef enum
     DEVICE_UNKNOWN = -1,
     DEVICE_ZYBER8S,
     DEVICE_ZYBER8G,
+    DEVICE_ZYBER8GPLUS,
 
 } DeviceModel;
 
@@ -47,7 +48,8 @@ typedef enum
 //     void (*set_version_mask)(uint32_t);
 // } AsicFunctions;
 
-typedef struct {
+typedef struct
+{
     char message[64];
     uint32_t count;
 } RejectedReasonStat;
@@ -104,7 +106,7 @@ typedef struct
 typedef struct
 {
     bool active;
-    char *message;
+    char * message;
     bool result;
     bool finished;
 } SelfTestModule;
@@ -148,8 +150,7 @@ typedef struct
     bool psram_is_available;
     bool queue_initalized;
 
-    bool is_multichip;
-    uint32_t chip_submit[8];
+    uint32_t chip_submit[12];
     char chip_submit_srt[128];
 
     uint16_t runningMode;
@@ -160,6 +161,7 @@ typedef struct
     bool is_chips_fail_detected;
     bool chips_reset_retart;
     uint16_t screen_saver_time;
+    uint8_t chips_count;
 
 } GlobalState;
 

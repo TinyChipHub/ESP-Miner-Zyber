@@ -5,12 +5,12 @@
 #include <string.h>
 #include <sys/time.h>
 
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "freertos/queue.h"
 #include "driver/gpio.h"
-#include "esp_log.h"
 #include "esp_check.h"
+#include "esp_log.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/queue.h"
+#include "freertos/task.h"
 
 #include "driver/gpio.h"
 #include "esp_app_desc.h"
@@ -19,16 +19,16 @@
 #include "esp_wifi.h"
 #include "lwip/inet.h"
 
-#include "system.h"
-#include "i2c_bitaxe.h"
 #include "adc.h"
 #include "connect.h"
-#include "nvs_config.h"
 #include "display.h"
+#include "i2c_bitaxe.h"
 #include "input.h"
+#include "nvs_config.h"
 #include "screen.h"
-#include "vcore.h"
+#include "system.h"
 #include "thermal.h"
+#include "vcore.h"
 
 static const char * TAG = "SystemModule";
 
@@ -36,7 +36,7 @@ static void _suffix_string(uint64_t, char *, size_t, int);
 
 static esp_netif_t * netif;
 
-//local function prototypes
+// local function prototypes
 static esp_err_t ensure_overheat_mode_config();
 
 static void _check_for_best_diff(GlobalState * GLOBAL_STATE, double diff, uint8_t job_id);
@@ -58,7 +58,7 @@ void SYSTEM_init_system(GlobalState * GLOBAL_STATE)
     module->start_time = esp_timer_get_time();
     module->lastClockSync = 0;
     module->FOUND_BLOCK = false;
-    
+
     // set the pool url
     module->pool_url = nvs_config_get_string(NVS_CONFIG_STRATUM_URL, CONFIG_STRATUM_URL);
     module->fallback_pool_url = nvs_config_get_string(NVS_CONFIG_FALLBACK_STRATUM_URL, CONFIG_FALLBACK_STRATUM_URL);
@@ -82,7 +82,7 @@ void SYSTEM_init_system(GlobalState * GLOBAL_STATE)
     module->overheat_mode = nvs_config_get_u16(NVS_CONFIG_OVERHEAT_MODE, 0);
     ESP_LOGI(TAG, "Initial overheat_mode value: %d", module->overheat_mode);
 
-    //Initialize power_fault fault mode
+    // Initialize power_fault fault mode
     module->power_fault = 0;
 
     // set the best diff string
@@ -96,39 +96,36 @@ void SYSTEM_init_system(GlobalState * GLOBAL_STATE)
     memset(module->wifi_status, 0, 20);
 }
 
-esp_err_t SYSTEM_init_peripherals(GlobalState * GLOBAL_STATE) {
-    
+esp_err_t SYSTEM_init_peripherals(GlobalState * GLOBAL_STATE)
+{
+
     ESP_RETURN_ON_ERROR(gpio_install_isr_service(0), TAG, "Error installing ISR service");
 
     // Initialize the core voltage regulator
     ESP_RETURN_ON_ERROR(VCORE_init(GLOBAL_STATE), TAG, "VCORE init failed!");
-    ESP_RETURN_ON_ERROR(VCORE_set_voltage(nvs_config_get_u16(NVS_CONFIG_ASIC_VOLTAGE, CONFIG_ASIC_VOLTAGE) / 1000.0, GLOBAL_STATE), TAG, "VCORE set voltage failed!");
+    ESP_RETURN_ON_ERROR(VCORE_set_voltage(nvs_config_get_u16(NVS_CONFIG_ASIC_VOLTAGE, CONFIG_ASIC_VOLTAGE) / 1000.0, GLOBAL_STATE),
+                        TAG, "VCORE set voltage failed!");
 
-    ESP_RETURN_ON_ERROR(Thermal_init(GLOBAL_STATE->device_model, GLOBAL_STATE->board_version, nvs_config_get_u16(NVS_CONFIG_INVERT_FAN_POLARITY, 1)), TAG, "Thermal init failed!");
+    ESP_RETURN_ON_ERROR(Thermal_init(GLOBAL_STATE->device_model, GLOBAL_STATE->board_version,
+                                     nvs_config_get_u16(NVS_CONFIG_INVERT_FAN_POLARITY, 1)),
+                        TAG, "Thermal init failed!");
 
     vTaskDelay(500 / portTICK_PERIOD_MS);
 
     // Ensure overheat_mode config exists
     ESP_RETURN_ON_ERROR(ensure_overheat_mode_config(), TAG, "Failed to ensure overheat_mode config");
 
-    //Init the DISPLAY
-    switch (GLOBAL_STATE->device_model) {
-        case DEVICE_ZYBER8S:
-        case DEVICE_ZYBER8G:
-            // display
-            if (display_init(GLOBAL_STATE) != ESP_OK || !GLOBAL_STATE->SYSTEM_MODULE.is_screen_active) {
-                ESP_LOGW(TAG, "OLED init failed!");
-            } else {
-                ESP_LOGI(TAG, "OLED init success!");
-            }
-            break;
-        default:
+    // Init the DISPLAY
+    if (display_init(GLOBAL_STATE) != ESP_OK || !GLOBAL_STATE->SYSTEM_MODULE.is_screen_active) {
+        ESP_LOGW(TAG, "OLED init failed!");
+    } else {
+        ESP_LOGI(TAG, "OLED init success!");
     }
 
     if (input_init(screen_next, toggle_wifi_softap) != ESP_OK) {
         ESP_LOGW(TAG, "Input init failed!");
-    }else{
-        display_input_init(display_short_press,display_long_press);
+    } else {
+        display_input_init(display_short_press, display_long_press);
     }
 
     ESP_RETURN_ON_ERROR(screen_start(GLOBAL_STATE), TAG, "Screen start failed!");
@@ -145,9 +142,10 @@ void SYSTEM_notify_accepted_share(GlobalState * GLOBAL_STATE)
     module->shares_accepted++;
 }
 
-static int compare_rejected_reason_stats(const void *a, const void *b) {
-    const RejectedReasonStat *ea = a;
-    const RejectedReasonStat *eb = b;
+static int compare_rejected_reason_stats(const void * a, const void * b)
+{
+    const RejectedReasonStat * ea = a;
+    const RejectedReasonStat * eb = b;
     return (eb->count > ea->count) - (ea->count > eb->count);
 }
 
@@ -158,25 +156,27 @@ void SYSTEM_notify_rejected_share(GlobalState * GLOBAL_STATE, char * error_msg)
     module->shares_rejected++;
 
     for (int i = 0; i < module->rejected_reason_stats_count; i++) {
-        if (strncmp(module->rejected_reason_stats[i].message, error_msg, sizeof(module->rejected_reason_stats[i].message) - 1) == 0) {
+        if (strncmp(module->rejected_reason_stats[i].message, error_msg, sizeof(module->rejected_reason_stats[i].message) - 1) ==
+            0) {
             module->rejected_reason_stats[i].count++;
             return;
         }
     }
 
     if (module->rejected_reason_stats_count < sizeof(module->rejected_reason_stats)) {
-        strncpy(module->rejected_reason_stats[module->rejected_reason_stats_count].message, 
-                error_msg, 
+        strncpy(module->rejected_reason_stats[module->rejected_reason_stats_count].message, error_msg,
                 sizeof(module->rejected_reason_stats[module->rejected_reason_stats_count].message) - 1);
-        module->rejected_reason_stats[module->rejected_reason_stats_count].message[sizeof(module->rejected_reason_stats[module->rejected_reason_stats_count].message) - 1] = '\0'; // Ensure null termination
+        module->rejected_reason_stats[module->rejected_reason_stats_count]
+            .message[sizeof(module->rejected_reason_stats[module->rejected_reason_stats_count].message) - 1] =
+            '\0'; // Ensure null termination
         module->rejected_reason_stats[module->rejected_reason_stats_count].count = 1;
         module->rejected_reason_stats_count++;
     }
 
     if (module->rejected_reason_stats_count > 1) {
-        qsort(module->rejected_reason_stats, module->rejected_reason_stats_count, 
-            sizeof(module->rejected_reason_stats[0]), compare_rejected_reason_stats);
-    }    
+        qsort(module->rejected_reason_stats, module->rejected_reason_stats_count, sizeof(module->rejected_reason_stats[0]),
+              compare_rejected_reason_stats);
+    }
 }
 
 void SYSTEM_notify_mining_started(GlobalState * GLOBAL_STATE)
@@ -238,7 +238,6 @@ void SYSTEM_notify_found_nonce(GlobalState * GLOBAL_STATE, double found_diff, ui
         module->current_hashrate = ((module->current_hashrate * 9) + rolling_rate) / 10;
     }
 
-
     // logArrayContents(historical_hashrate, HISTORY_LENGTH);
     // logArrayContents(historical_hashrate_time_stamps, HISTORY_LENGTH);
 
@@ -267,10 +266,10 @@ static void _check_for_best_diff(GlobalState * GLOBAL_STATE, double diff, uint8_
     }
 
     double network_diff = _calculate_network_difficulty(GLOBAL_STATE->ASIC_TASK_MODULE.active_jobs[job_id]->target);
-    module->network_diff=network_diff;
+    module->network_diff = network_diff;
     if (diff > network_diff) {
         module->FOUND_BLOCK = true;
-        module->block_found+=1;
+        module->block_found += 1;
         ESP_LOGI(TAG, "FOUND BLOCK!!!!!!!!!!!!!!!!!!!!!! %f > %f", diff, network_diff);
     }
 
@@ -343,7 +342,8 @@ static void _suffix_string(uint64_t val, char * buf, size_t bufsiz, int sigdigit
     }
 }
 
-static esp_err_t ensure_overheat_mode_config() {
+static esp_err_t ensure_overheat_mode_config()
+{
     uint16_t overheat_mode = nvs_config_get_u16(NVS_CONFIG_OVERHEAT_MODE, UINT16_MAX);
 
     if (overheat_mode == UINT16_MAX) {

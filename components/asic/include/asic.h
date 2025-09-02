@@ -1,12 +1,13 @@
 #ifndef ASIC_H
 #define ASIC_H
 
-#include <esp_err.h>
-#include "global_state.h"
 #include "common.h"
+#include "global_state.h"
+#include <esp_err.h>
 
 #define ZYBER8S_ASIC_COUNT 8
 #define ZYBER8G_ASIC_COUNT 8
+#define ZYBER8GPLUS_ASIC_COUNT 12
 
 uint8_t ASIC_init(GlobalState * GLOBAL_STATE);
 uint8_t ASIC_get_asic_count(GlobalState * GLOBAL_STATE);
