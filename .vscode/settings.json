@@ -62,7 +62,8 @@
         "esp_wifi.h": "c",
         "serial.h": "c",
         "algorithm": "c",
-        "lvgl.h": "c"
+        "lvgl.h": "c",
+        "initializer_list": "cpp"
     },
     "editor.formatOnSave": true,
     "cSpell.words": [

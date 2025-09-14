@@ -82,7 +82,7 @@ char * STRATUM_V1_receive_jsonrpc_line(int sockfd)
                 ESP_LOGI(TAG, "Error: recv (errno %d: %s)", errno, strerror(errno));
                 if (json_rpc_buffer) {
                     free(json_rpc_buffer);
-                    json_rpc_buffer=0;
+                    json_rpc_buffer = 0;
                 }
                 return 0;
             }
@@ -116,7 +116,7 @@ void STRATUM_V1_parse(StratumApiV1Message * message, const char * stratum_json)
     cJSON * method_json = cJSON_GetObjectItem(json, "method");
     stratum_method result = STRATUM_UNKNOWN;
 
-    //if there is a method, then use that to decide what to do
+    // if there is a method, then use that to decide what to do
     if (method_json != NULL && cJSON_IsString(method_json)) {
         if (strcmp("mining.notify", method_json->valuestring) == 0) {
             result = MINING_NOTIFY;
@@ -130,7 +130,7 @@ void STRATUM_V1_parse(StratumApiV1Message * message, const char * stratum_json)
             ESP_LOGI(TAG, "unhandled method in stratum message: %s", stratum_json);
         }
 
-    //if there is no method, then it is a result
+        // if there is no method, then it is a result
     } else {
         // parse results
         cJSON * result_json = cJSON_GetObjectItem(json, "result");
@@ -141,8 +141,8 @@ void STRATUM_V1_parse(StratumApiV1Message * message, const char * stratum_json)
         if (result_json == NULL) {
             message->response_success = false;
             message->error_str = strdup("unknown");
-            
-        // if it's an error, then it's a fail
+
+            // if it's an error, then it's a fail
         } else if (!cJSON_IsNull(error_json)) {
             message->response_success = false;
             message->error_str = strdup("unknown");
@@ -161,7 +161,7 @@ void STRATUM_V1_parse(StratumApiV1Message * message, const char * stratum_json)
                 }
             }
 
-        // if the result is a boolean, then parse it
+            // if the result is a boolean, then parse it
         } else if (cJSON_IsBool(result_json)) {
             if (parsed_id < 5) {
                 result = STRATUM_RESULT_SETUP;
@@ -175,10 +175,10 @@ void STRATUM_V1_parse(StratumApiV1Message * message, const char * stratum_json)
                 message->error_str = strdup("unknown");
                 if (cJSON_IsString(reject_reason_json)) {
                     message->error_str = strdup(cJSON_GetStringValue(reject_reason_json));
-                }                
+                }
             }
-        
-        //if the id is STRATUM_ID_SUBSCRIBE parse it
+
+            // if the id is STRATUM_ID_SUBSCRIBE parse it
         } else if (parsed_id == STRATUM_ID_SUBSCRIBE) {
             result = STRATUM_RESULT_SUBSCRIBE;
 
@@ -200,11 +200,11 @@ void STRATUM_V1_parse(StratumApiV1Message * message, const char * stratum_json)
             strcpy(message->extranonce_str, extranonce_json->valuestring);
             message->response_success = true;
 
-            //print the extranonce_str
+            // print the extranonce_str
             ESP_LOGI(TAG, "extranonce_str: %s", message->extranonce_str);
             ESP_LOGI(TAG, "extranonce_2_len: %d", message->extranonce_2_len);
 
-        //if the id is STRATUM_ID_CONFIGURE parse it
+            // if the id is STRATUM_ID_CONFIGURE parse it
         } else if (parsed_id == STRATUM_ID_CONFIGURE) {
             cJSON * mask = cJSON_GetObjectItem(result_json, "version-rolling.mask");
             if (mask != NULL) {
@@ -264,7 +264,7 @@ void STRATUM_V1_parse(StratumApiV1Message * message, const char * stratum_json)
         uint32_t version_mask = strtoul(cJSON_GetArrayItem(params, 0)->valuestring, NULL, 16);
         message->version_mask = version_mask;
     }
-    done:
+done:
     cJSON_Delete(json);
 }
 
@@ -315,16 +315,19 @@ int STRATUM_V1_subscribe(int socket, int send_uid, char * model)
 {
     // Subscribe
     char subscribe_msg[BUFFER_SIZE];
-    const esp_app_desc_t *app_desc = esp_app_get_description();
-    const char *version = app_desc->version;	
-    
-    #ifdef CONFIG_BOARD_ZYBER_8S
-    sprintf(subscribe_msg, "{\"id\": %d, \"method\": \"mining.subscribe\", \"params\": [\"Zyber8S/%s/%s\"]}\n", send_uid++, model, version);
-    #elif CONFIG_BOARD_ZYBER_8G
-    sprintf(subscribe_msg, "{\"id\": %d, \"method\": \"mining.subscribe\", \"params\": [\"Zyber8G/%s/%s\"]}\n", send_uid++, model, version);
-    #else
-    sprintf(subscribe_msg, "{\"id\": %d, \"method\": \"mining.subscribe\", \"params\": [\"bitaxe/%s/%s\"]}\n", send_uid, model, version);
-    #endif
+    const esp_app_desc_t * app_desc = esp_app_get_description();
+    const char * version = app_desc->version;
+
+#if CONFIG_BOARD_ZYBER_8S
+    sprintf(subscribe_msg, "{\"id\": %d, \"method\": \"mining.subscribe\", \"params\": [\"Zyber8S/%s/%s\"]}\n", send_uid++, model,
+            version);
+#elif CONFIG_BOARD_ZYBER_8G
+    sprintf(subscribe_msg, "{\"id\": %d, \"method\": \"mining.subscribe\", \"params\": [\"Zyber8G/%s/%s\"]}\n", send_uid++, model,
+            version);
+#else
+    sprintf(subscribe_msg, "{\"id\": %d, \"method\": \"mining.subscribe\", \"params\": [\"bitaxe/%s/%s\"]}\n", send_uid, model,
+            version);
+#endif
     debug_stratum_tx(subscribe_msg);
 
     return write(socket, subscribe_msg, strlen(subscribe_msg));
@@ -355,9 +358,8 @@ int STRATUM_V1_authenticate(int socket, int send_uid, const char * username, con
 /// @param ntime The hex-encoded time value use in the block header.
 /// @param extranonce_2 The hex-encoded value of extra nonce 2.
 /// @param nonce The hex-encoded nonce value to use in the block header.
-int STRATUM_V1_submit_share(int socket, int send_uid, const char * username, const char * jobid,
-                            const char * extranonce_2, const uint32_t ntime,
-                            const uint32_t nonce, const uint32_t version)
+int STRATUM_V1_submit_share(int socket, int send_uid, const char * username, const char * jobid, const char * extranonce_2,
+                            const uint32_t ntime, const uint32_t nonce, const uint32_t version)
 {
     char submit_msg[BUFFER_SIZE];
     sprintf(submit_msg,
@@ -382,14 +384,14 @@ int STRATUM_V1_configure_version_rolling(int socket, int send_uid, uint32_t * ve
 
 static void debug_stratum_tx(const char * msg)
 {
-    //remove the trailing newline
+    // remove the trailing newline
     char * newline = strchr(msg, '\n');
     if (newline != NULL) {
         *newline = '\0';
     }
     ESP_LOGI(TAG, "tx: %s", msg);
 
-    //put it back!
+    // put it back!
     if (newline != NULL) {
         *newline = '\n';
     }
