@@ -29,64 +29,69 @@ static TPS546_CONFIG TPS546_CONFIG_ZYBER = {
     .TPS546_INIT_IOUT_OC_FAULT_LIMIT = 105.00 /* A */
 };
 
-static const char *TAG = "vcore.c";
+static const char* TAG = "vcore.c";
 
-esp_err_t VCORE_init(GlobalState * GLOBAL_STATE) {
+esp_err_t VCORE_init(GlobalState* GLOBAL_STATE) {
     switch (GLOBAL_STATE->device_model) {
-        case DEVICE_ZYBER8S:
-        case DEVICE_ZYBER8G:
-            ESP_RETURN_ON_ERROR(TPS546_init(TPS546_CONFIG_ZYBER), TAG, "TPS546 init failed!");
-            break;
-        default:
+    case DEVICE_ZYBER8S:
+    case DEVICE_ZYBER8G:
+    case DEVICE_ZYBER8GPLUS:
+        ESP_RETURN_ON_ERROR(TPS546_init(TPS546_CONFIG_ZYBER), TAG, "TPS546 init failed!");
+        break;
+    default:
     }
 
     return ESP_OK;
 }
 
-esp_err_t VCORE_set_voltage(float core_voltage, GlobalState * global_state)
+esp_err_t VCORE_set_voltage(float core_voltage, GlobalState* global_state)
 {
     switch (global_state->device_model) {
-        case DEVICE_ZYBER8S:
-        case DEVICE_ZYBER8G:
-            ESP_LOGI(TAG, "Set ASIC voltage = %.3fV", core_voltage);
-            ESP_RETURN_ON_ERROR(TPS546_set_vout(core_voltage * 4), TAG, "TPS546 set voltage failed!");
-        default:
+    case DEVICE_ZYBER8S:
+    case DEVICE_ZYBER8G:
+    case DEVICE_ZYBER8GPLUS:
+        ESP_LOGI(TAG, "Set ASIC voltage = %.3fV", core_voltage);
+        ESP_RETURN_ON_ERROR(TPS546_set_vout(core_voltage * 4), TAG, "TPS546 set voltage failed!");
+    default:
     }
 
     return ESP_OK;
 }
 
-int16_t VCORE_get_voltage_mv(GlobalState * global_state) {
+int16_t VCORE_get_voltage_mv(GlobalState* global_state) {
 
     switch (global_state->device_model) {
-        case DEVICE_ZYBER8S:
-        case DEVICE_ZYBER8G:
-            return (TPS546_get_vout() * 1000) / 4;
+    case DEVICE_ZYBER8S:
+    case DEVICE_ZYBER8G:
+    case DEVICE_ZYBER8GPLUS:
+        return (TPS546_get_vout() * 1000) / 4;
         // case DEVICE_HEX:
-        default:
+    default:
     }
     return -1;
 }
 
-esp_err_t VCORE_check_fault(GlobalState * global_state) {
+esp_err_t VCORE_check_fault(GlobalState* global_state) {
 
     switch (global_state->device_model) {
-        case DEVICE_ZYBER8S:
-        case DEVICE_ZYBER8G:
-            ESP_RETURN_ON_ERROR(TPS546_check_status(global_state), TAG, "TPS546 check status failed!");
-            break;
+    case DEVICE_ZYBER8S:
+    case DEVICE_ZYBER8G:
+    case DEVICE_ZYBER8GPLUS:
+        ESP_RETURN_ON_ERROR(TPS546_check_status(global_state), TAG, "TPS546 check status failed!");
+        break;
         // case DEVICE_HEX:
-        default:
+    default:
     }
     return ESP_OK;
 }
 
-const char* VCORE_get_fault_string(GlobalState * global_state) {
+const char* VCORE_get_fault_string(GlobalState* global_state) {
     switch (global_state->device_model) {
-        case DEVICE_ZYBER8S:
-        case DEVICE_ZYBER8G:
-            return TPS546_get_error_message();
-        default:
+    case DEVICE_ZYBER8S:
+    case DEVICE_ZYBER8G:
+    case DEVICE_ZYBER8GPLUS:
+        return TPS546_get_error_message();
+    default:
     }
     return NULL;
 }

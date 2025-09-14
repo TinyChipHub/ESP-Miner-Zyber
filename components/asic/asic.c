@@ -9,10 +9,10 @@
 
 #include "asic.h"
 
-static const char * TAG = "asic";
+static const char* TAG = "asic";
 
 // .init_fn = BM1366_init,
-uint8_t ASIC_init(GlobalState * GLOBAL_STATE)
+uint8_t ASIC_init(GlobalState* GLOBAL_STATE)
 {
     switch (GLOBAL_STATE->device_model) {
     case DEVICE_ZYBER8G:
@@ -20,13 +20,13 @@ uint8_t ASIC_init(GlobalState * GLOBAL_STATE)
     case DEVICE_ZYBER8S:
         return BM1368_init(GLOBAL_STATE->POWER_MANAGEMENT_MODULE.frequency_value, ZYBER8S_ASIC_COUNT);
     case DEVICE_ZYBER8GPLUS:
-        return BM1397_init(GLOBAL_STATE->POWER_MANAGEMENT_MODULE.frequency_value, ZYBER8GPLUS_ASIC_COUNT);
+        return BM1370_init(GLOBAL_STATE->POWER_MANAGEMENT_MODULE.frequency_value, ZYBER8GPLUS_ASIC_COUNT);
     default:
     }
     return ESP_OK;
 }
 
-uint8_t ASIC_get_asic_count(GlobalState * GLOBAL_STATE)
+uint8_t ASIC_get_asic_count(GlobalState* GLOBAL_STATE)
 {
     switch (GLOBAL_STATE->device_model) {
     case DEVICE_ZYBER8G:
@@ -40,7 +40,7 @@ uint8_t ASIC_get_asic_count(GlobalState * GLOBAL_STATE)
     return 0;
 }
 
-uint16_t ASIC_get_small_core_count(GlobalState * GLOBAL_STATE)
+uint16_t ASIC_get_small_core_count(GlobalState* GLOBAL_STATE)
 {
     switch (GLOBAL_STATE->device_model) {
     case DEVICE_ZYBER8S:
@@ -54,7 +54,7 @@ uint16_t ASIC_get_small_core_count(GlobalState * GLOBAL_STATE)
 }
 
 // .receive_result_fn = BM1366_process_work,
-task_result * ASIC_process_work(GlobalState * GLOBAL_STATE)
+task_result* ASIC_process_work(GlobalState* GLOBAL_STATE)
 {
     switch (GLOBAL_STATE->device_model) {
     case DEVICE_ZYBER8S:
@@ -68,7 +68,7 @@ task_result * ASIC_process_work(GlobalState * GLOBAL_STATE)
 }
 
 // .set_max_baud_fn = BM1366_set_max_baud,
-int ASIC_set_max_baud(GlobalState * GLOBAL_STATE)
+int ASIC_set_max_baud(GlobalState* GLOBAL_STATE)
 {
     switch (GLOBAL_STATE->device_model) {
     case DEVICE_ZYBER8S:
@@ -82,7 +82,7 @@ int ASIC_set_max_baud(GlobalState * GLOBAL_STATE)
 }
 
 // .set_difficulty_mask_fn = BM1366_set_job_difficulty_mask,
-void ASIC_set_job_difficulty_mask(GlobalState * GLOBAL_STATE, uint8_t mask)
+void ASIC_set_job_difficulty_mask(GlobalState* GLOBAL_STATE, uint8_t mask)
 {
     switch (GLOBAL_STATE->device_model) {
     case DEVICE_ZYBER8S:
@@ -97,7 +97,7 @@ void ASIC_set_job_difficulty_mask(GlobalState * GLOBAL_STATE, uint8_t mask)
 }
 
 // .send_work_fn = BM1366_send_work,
-void ASIC_send_work(GlobalState * GLOBAL_STATE, void * next_job)
+void ASIC_send_work(GlobalState* GLOBAL_STATE, void* next_job)
 {
     switch (GLOBAL_STATE->device_model) {
     case DEVICE_ZYBER8S:
@@ -113,7 +113,7 @@ void ASIC_send_work(GlobalState * GLOBAL_STATE, void * next_job)
 }
 
 // .set_version_mask = BM1366_set_version_mask
-void ASIC_set_version_mask(GlobalState * GLOBAL_STATE, uint32_t mask)
+void ASIC_set_version_mask(GlobalState* GLOBAL_STATE, uint32_t mask)
 {
     switch (GLOBAL_STATE->device_model) {
     case DEVICE_ZYBER8S:
@@ -128,7 +128,7 @@ void ASIC_set_version_mask(GlobalState * GLOBAL_STATE, uint32_t mask)
     }
 }
 
-bool ASIC_set_frequency(GlobalState * GLOBAL_STATE, float target_frequency)
+bool ASIC_set_frequency(GlobalState* GLOBAL_STATE, float target_frequency)
 {
     ESP_LOGI(TAG, "Setting ASIC frequency to %.2f MHz", target_frequency);
     bool success = false;
@@ -156,14 +156,15 @@ bool ASIC_set_frequency(GlobalState * GLOBAL_STATE, float target_frequency)
 
     if (success) {
         ESP_LOGI(TAG, "Successfully transitioned to new ASIC frequency: %.2f MHz", target_frequency);
-    } else {
+    }
+    else {
         ESP_LOGE(TAG, "Failed to transition to new ASIC frequency: %.2f MHz", target_frequency);
     }
 
     return success;
 }
 
-esp_err_t ASIC_set_device_model(GlobalState * GLOBAL_STATE)
+esp_err_t ASIC_set_device_model(GlobalState* GLOBAL_STATE)
 {
 
     if (GLOBAL_STATE->device_model_str == NULL) {
@@ -183,7 +184,8 @@ esp_err_t ASIC_set_device_model(GlobalState * GLOBAL_STATE)
         ESP_LOGI(TAG, "ASIC: %dx BM1368 (%" PRIu64 " cores)", ZYBER8S_ASIC_COUNT, BM1368_CORE_COUNT);
         GLOBAL_STATE->device_model = DEVICE_ZYBER8S;
 
-    } else if (strcmp(GLOBAL_STATE->device_model_str, "zyber8g") == 0) {
+    }
+    else if (strcmp(GLOBAL_STATE->device_model_str, "zyber8g") == 0) {
         GLOBAL_STATE->asic_model = ASIC_BM1370;
         GLOBAL_STATE->chips_count = ZYBER8G_ASIC_COUNT;
         // GLOBAL_STATE.asic_job_frequency_ms = (NONCE_SPACE / (double) (GLOBAL_STATE.POWER_MANAGEMENT_MODULE.frequency_value *
@@ -195,7 +197,8 @@ esp_err_t ASIC_set_device_model(GlobalState * GLOBAL_STATE)
         ESP_LOGI(TAG, "ASIC: %dx BM1370 (%" PRIu64 " cores)", ZYBER8G_ASIC_COUNT, BM1370_CORE_COUNT);
         GLOBAL_STATE->device_model = DEVICE_ZYBER8G;
 
-    } else if (strcmp(GLOBAL_STATE->device_model_str, "zyber8gplus") == 0) {
+    }
+    else if (strcmp(GLOBAL_STATE->device_model_str, "zyber8gplus") == 0) {
         GLOBAL_STATE->asic_model = ASIC_BM1370;
         GLOBAL_STATE->chips_count = ZYBER8GPLUS_ASIC_COUNT;
         // GLOBAL_STATE.asic_job_frequency_ms = (NONCE_SPACE / (double) (GLOBAL_STATE.POWER_MANAGEMENT_MODULE.frequency_value *
@@ -207,7 +210,8 @@ esp_err_t ASIC_set_device_model(GlobalState * GLOBAL_STATE)
         ESP_LOGI(TAG, "ASIC: %dx BM1370 (%" PRIu64 " cores)", ZYBER8GPLUS_ASIC_COUNT, BM1370_CORE_COUNT);
         GLOBAL_STATE->device_model = DEVICE_ZYBER8GPLUS;
 
-    } else {
+    }
+    else {
         ESP_LOGE(TAG, "Invalid DEVICE model");
         GLOBAL_STATE->device_model = DEVICE_UNKNOWN;
         return ESP_FAIL;

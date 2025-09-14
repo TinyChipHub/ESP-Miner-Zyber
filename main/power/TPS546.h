@@ -23,7 +23,7 @@
 
 #define TPS546_INIT_PHASE 0x00  /* phase */
 
-#define TPS546_INIT_FREQUENCY 650  /* KHz */
+#define TPS546_INIT_FREQUENCY 550  /* KHz */
 
 typedef struct
 {
