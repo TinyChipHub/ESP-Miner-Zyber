@@ -1,5 +1,7 @@
 @echo off
 
+idf.py clean
+
 set VERSION=%1
 @REM set BOARD=%2
 
