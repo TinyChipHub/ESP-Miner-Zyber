@@ -3,10 +3,4 @@
         <li app-menuitem *ngIf="!item.separator" [item]="item" [index]="i" [root]="true"></li>
         <li *ngIf="item.separator" class="menu-separator"></li>
     </ng-container>
-
-
-    <li id="restart-container">
-        <p-button (click)="restart()" id="restart" label="Restart" severity="primary"></p-button>
-    </li>
-
 </ul>

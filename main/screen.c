@@ -10,6 +10,7 @@
 #include "screen.h"
 #include "nvs_config.h"
 #include "display.h"
+#include "driver/gpio.h"
 
 // static const char * TAG = "screen";
 
@@ -268,51 +269,6 @@ static lv_obj_t * create_scr_mining_stat(SystemModule * module) {
 static lv_obj_t * create_scr_device_info() {
     lv_obj_t * scr = lv_obj_create(NULL);
     createDefalutImage(scr,&bg_device_info);
-
-    // chips_status = lv_obj_create(scr);
-    // lv_obj_set_flex_flow(chips_status,LV_FLEX_FLOW_ROW);
-    // lv_obj_set_flex_align(chips_status, LV_FLEX_ALIGN_SPACE_EVENLY, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
-    // lv_obj_set_width(chips_status,155);
-    // lv_obj_set_height(chips_status,LV_SIZE_CONTENT);
-    // lv_obj_clear_flag(chips_status, LV_OBJ_FLAG_SCROLLABLE);
-    // lv_obj_set_style_bg_opa(chips_status,0,0);
-    // lv_obj_set_style_pad_top(chips_status,0,0);
-    // lv_obj_set_style_border_width(chips_status,0,0);
-    // lv_obj_set_x(chips_status,60);
-    // lv_obj_set_y(chips_status,48);
-
-    // ui_lbDIChip1 = createDefalutLabelWithoutXY(chips_status, TEXT_RED, LV_TEXT_ALIGN_AUTO, &font_XinYin_reg10);
-    // chips_label[0] = ui_lbDIChip1;
-    // lv_label_set_text(ui_lbDIChip1,"Dw");
-    
-    // ui_lbDIChip2 = createDefalutLabelWithoutXY(chips_status, TEXT_RED, LV_TEXT_ALIGN_AUTO, &font_XinYin_reg10);
-    // chips_label[1] = ui_lbDIChip2;
-    // lv_label_set_text(ui_lbDIChip2,"Dw");
-    
-    // ui_lbDIChip3 = createDefalutLabelWithoutXY(chips_status, TEXT_RED, LV_TEXT_ALIGN_AUTO, &font_XinYin_reg10);
-    // chips_label[2] = ui_lbDIChip3;
-    // lv_label_set_text(ui_lbDIChip3,"Dw");
-    
-    // ui_lbDIChip4 = createDefalutLabelWithoutXY(chips_status, TEXT_RED, LV_TEXT_ALIGN_AUTO, &font_XinYin_reg10);
-    // chips_label[3] = ui_lbDIChip4;
-    // lv_label_set_text(ui_lbDIChip4,"Dw");
-    
-    // ui_lbDIChip5 = createDefalutLabelWithoutXY(chips_status, TEXT_RED, LV_TEXT_ALIGN_AUTO, &font_XinYin_reg10);
-    // chips_label[4] = ui_lbDIChip5;
-    // lv_label_set_text(ui_lbDIChip5,"Dw");
-    
-    // ui_lbDIChip6 = createDefalutLabelWithoutXY(chips_status, TEXT_RED, LV_TEXT_ALIGN_AUTO, &font_XinYin_reg10);
-    // lv_label_set_text(ui_lbDIChip6,"Dw");
-    // chips_label[5] = ui_lbDIChip6;
-
-    // ui_lbDIChip7 = createDefalutLabelWithoutXY(chips_status, TEXT_RED, LV_TEXT_ALIGN_AUTO, &font_XinYin_reg10);
-    // lv_label_set_text(ui_lbDIChip7,"Dw");
-    // chips_label[6] = ui_lbDIChip7;
-
-    // ui_lbDIChip8 = createDefalutLabelWithoutXY(chips_status, TEXT_RED, LV_TEXT_ALIGN_AUTO, &font_XinYin_reg10);
-    // lv_label_set_text(ui_lbDIChip8,"Dw");
-    // chips_label[7] = ui_lbDIChip8;
-
     ui_lbDIVin = createDefalutLabel(scr, 0xffffff,LV_TEXT_ALIGN_LEFT,&font_XinYin_reg13,72,90);
     lv_label_set_text(ui_lbDIVin,"V");
     ui_lbDIVout = createDefalutLabel(scr, 0xffffff,LV_TEXT_ALIGN_LEFT,&font_XinYin_reg13,72,132);
@@ -373,8 +329,8 @@ static void screen_update_cb(lv_timer_t * timer)
 {
     if (display_off){
         return ;
-    }else if(GLOBAL_STATE->screen_saver_time>0){
-        if(lv_disp_get_inactive_time(NULL)>(GLOBAL_STATE->screen_saver_time)*60*1000){
+    }else if(nvs_config_get_i32(NVS_CONFIG_DISPLAY_TIMEOUT)>0){
+        if(lv_disp_get_inactive_time(NULL)>(nvs_config_get_i32(NVS_CONFIG_DISPLAY_TIMEOUT))*60*1000){
             
             if(lvgl_port_lock(0)){
                 ESP_LOGI(TAG,"Max screen idel excess, turn off the screen now");
@@ -387,7 +343,7 @@ static void screen_update_cb(lv_timer_t * timer)
         }
     }
 
-    if (GLOBAL_STATE->SELF_TEST_MODULE.active) {
+    if (GLOBAL_STATE->SELF_TEST_MODULE.is_active) {
 
         screen_show(SCR_SELF_TEST);
 
@@ -453,7 +409,7 @@ static void screen_update_cb(lv_timer_t * timer)
     
     // char *temp = countToStr(module->network_diff);
     char nwTra[8];
-    countToStr(nwTra,8,module->network_diff,false);
+    countToStr(nwTra,8,GLOBAL_STATE->network_nonce_diff,false);
     if(strcmp(lv_label_get_text(ui_lbMiningTarget), nwTra) != 0){
         lv_label_set_text(ui_lbMiningTarget,nwTra);
     }
@@ -530,7 +486,7 @@ static void screen_update_cb(lv_timer_t * timer)
     }
     
 
-    if (CAROUSEL_DELAY_COUNT > current_screen_counter || found_block) {
+    if (!nvs_config_get_bool(NVS_CONFIG_DISPLAY_AUTOSCROLL)||CAROUSEL_DELAY_COUNT > current_screen_counter || found_block) {
         return;
     }
     screen_next();
@@ -546,7 +502,7 @@ void screen_next()
 void display_short_press(void){
     //lvgl_port_resume();
     if(lvgl_port_lock(0)){
-        ESP_LOGW(TAG,"display switch on");
+        ESP_LOGI(TAG,"display switch on");
         gpio_set_level(DISPLAY_PIN_PWR, true);
         gpio_set_level(DISPLAY_PIN_BK_PWR, DISPLAY_LCD_BK_LIGHT_ON);
         //lvgl_port_resume();
@@ -558,7 +514,7 @@ void display_short_press(void){
 
 void display_long_press(void){
     if(lvgl_port_lock(0)){
-        ESP_LOGW(TAG,"display_long_press_cb");
+        ESP_LOGI(TAG,"display_long_press_cb");
         //lvgl_port_stop();
         gpio_set_level(DISPLAY_PIN_PWR, false);
         gpio_set_level(DISPLAY_PIN_BK_PWR, DISPLAY_LCD_BK_LIGHT_OFF);

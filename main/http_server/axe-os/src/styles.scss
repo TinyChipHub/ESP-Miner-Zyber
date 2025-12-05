@@ -1,17 +1,10 @@
 @font-face {
-    font-family: 'Angel Wish';
-    src: url(./assets/fonts/AngelWish.ttf) format('truetype');
-}
-
-@font-face {
     font-family: 'Nippo-Regular';
-    src: url(./assets/fonts/Nippo-Regular.woff2) format('woff2'),
-         url(./assets/fonts/Nippo-Regular.woff) format('woff'),
-         url(./assets/fonts/Nippo-Regular.ttf) format('truetype');
+    src: url(/assets/fonts/Nippo-Regular.woff2) format('woff2');
     font-weight: 400;
     font-display: swap;
     font-style: normal;
-  }
+}
 
 * {
     font-family: 'Nippo-Regular';
@@ -20,8 +13,8 @@
 @import "app/layout/styles/layout/layout.scss";
 @import "app/layout/styles/theme/themes/vela/bitaxe/theme.scss";
 
-@import "../node_modules/primeicons/primeicons.css";
-@import "../node_modules/primeng/resources/primeng.min.css";
+@import "app/layout/styles/modules/primeicons.css";
+@import "app/layout/styles/modules/primeng.min.css";
 
 @import "../node_modules/primeflex/primeflex.min.css";
 
@@ -38,6 +31,21 @@ p-chart>div {
     }
 }
 
+.hover-next-input:hover + * {
+    .p-dropdown {
+        border-color: var(--checkbox-hover-bg);
+    }
+    .p-slider {
+        .p-slider-handle {
+            border-color: var(--checkbox-hover-bg);
+            background-color: var(--checkbox-hover-bg);
+        }
+        .p-slider-range {
+            background-color: var(--checkbox-hover-bg);
+        }
+    }
+}
+
 /* PrimeNG Component Theme Overrides */
 .p-slider {
     .p-slider-range {
@@ -46,16 +54,46 @@ p-chart>div {
     .p-slider-handle {
         background: var(--slider-handle-bg);
         border: 2px solid var(--slider-handle-bg);
+
+        &:focus {
+            box-shadow: var(--focus-ring);
+        }
     }
 }
 
 .p-checkbox {
-    .p-checkbox-box {
+    &:not(.p-checkbox-disabled) {
+        .p-checkbox-box {
+            &.p-focus,
+            &:hover {
+                border-color: var(--checkbox-hover-bg);
+            }
+
+            &.p-highlight {
+                border-color: var(--checkbox-border);
+                background: var(--checkbox-bg);
+
+                &:hover {
+                    background: var(--checkbox-hover-bg);
+                    border-color: var(--checkbox-hover-bg);
+                }
+            }
+        }
+    }
+}
+
+.p-radiobutton {
+    .p-radiobutton-box {
+        &:not(.p-disabled):not(.p-highlight):hover,
+        &:not(.p-disabled).p-focus {
+            border-color: var(--checkbox-hover-bg);
+        }
+
         &.p-highlight {
             border-color: var(--checkbox-border);
             background: var(--checkbox-bg);
 
-            &:hover {
+            &:not(.p-disabled):hover {
                 background: var(--checkbox-hover-bg);
                 border-color: var(--checkbox-hover-bg);
             }
@@ -63,17 +101,13 @@ p-chart>div {
     }
 }
 
-.p-button {
+.p-button:not(.p-button-secondary) {
     background: var(--button-bg);
     border: 1px solid var(--button-bg);
 
     &:enabled:hover {
         background: var(--button-hover-bg);
         border-color: var(--button-hover-bg);
-    }
-
-    &:focus {
-        box-shadow: var(--button-focus-shadow);
     }
 }
 
@@ -128,6 +162,10 @@ button.color-dot {
     .p-progressbar-value {
         background: var(--progressbar-value-bg);
     }
+
+    &--thin {
+        height: 6px !important;
+    }
 }
 
 /* Dropdown Theme*/
@@ -139,7 +177,8 @@ button.color-dot {
 
     &:hover,
     &:focus,
-    &.p-dropdown-open {
+    &.p-dropdown-open,
+    &:not(.p-disabled).p-focus {
         border-color: var(--togglebutton-hover-bg) !important;
     }
 
@@ -147,6 +186,8 @@ button.color-dot {
         background: var(--surface-overlay) !important;
 
         .p-dropdown-items {
+            padding: 0;
+
             .p-dropdown-item {
                 &:hover {
                     background: var(--highlight-bg) !important;
@@ -160,4 +201,56 @@ button.color-dot {
             }
         }
     }
+
+    .p-overlay {
+        left: -1px !important;
+        right: -1px !important;
+    }
+
+    &--small {
+        .p-dropdown-label,
+        .p-dropdown-item {
+            font-size: small;
+        }
+        .p-dropdown-label {
+            padding: 0.3rem 0 0.3rem 0.7rem;
+        }
+    }
+}
+
+.p-button-icon {
+    font-size: 1.2rem;
+}
+
+.p-dialog {
+    @extend .card;
+    margin: 1rem;
+
+    &-header,
+    &-content {
+        padding: 0;
+        margin: 0;
+        background: none;
+    }
+
+    &-header {
+        margin: 0 0 2rem;
+    }
+
+    &-header-icon {
+        @extend .p-button;
+        width: 2.2rem;
+        height: 2.2rem;
+        color: #fff;
+        border-radius: 0;
+    }
+
+    &-title {
+        @extend h2;
+        margin: 0;
+    }
+}
+
+.line-break-anywhere {
+    line-break: anywhere;
 }

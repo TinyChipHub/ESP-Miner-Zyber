@@ -1,57 +1,57 @@
 #include "thermal.h"
-#include "EMC2101.h"
+
 #include "esp_log.h"
+#include "esp_check.h"
 
-#define INTERNAL_OFFSET 5 // degrees C
+#include "EMC2101.h"
+#include "EMC2302.h"
+#include "TMP1075.h"
 
-static const char * TAG = "Thermal";
+static const char * TAG = "thermal";
 
-esp_err_t Thermal_init(DeviceModel device_model, int board_version, bool polarity)
+esp_err_t Thermal_init(DeviceConfig * DEVICE_CONFIG)
 {
-    // init the EMC2101, if we have one
-    switch (device_model) {
-    case DEVICE_ZYBER8S:
-    case DEVICE_ZYBER8G:
-        EMC2302_init(true);
-        if (board_version >= 1110) {
-            EMC2101_init(true);
-            TMP1075_init(true);
-        } else {
-            TMP1075_init(false);
+    if (DEVICE_CONFIG->EMC2101) {
+        ESP_RETURN_ON_ERROR(EMC2101_init(DEVICE_CONFIG->temp_offset), TAG, "Failed to initialise EMC2101");
+        // TODO: Improve this check.
+        if (DEVICE_CONFIG->emc_ideality_factor != 0x00) {
+            ESP_LOGI(TAG, "EMC2101 configuration: Ideality Factor: %02x, Beta Compensation: %02x", DEVICE_CONFIG->emc_ideality_factor, DEVICE_CONFIG->emc_beta_compensation);
+            EMC2101_set_ideality_factor(DEVICE_CONFIG->emc_ideality_factor);
+            EMC2101_set_beta_compensation(DEVICE_CONFIG->emc_beta_compensation);
         }
-    default:
     }
+    if (DEVICE_CONFIG->EMC2302) {
+        ESP_RETURN_ON_ERROR(EMC2302_init(), TAG, "Failed to initialise EMC2302");
+    }
+    if (DEVICE_CONFIG->TMP1075) {
+        ESP_RETURN_ON_ERROR(TMP1075_init(DEVICE_CONFIG->temp_offset,DEVICE_CONFIG->has_three_fan), TAG, "Failed to initialise TMP1075");
+    }
+
     return ESP_OK;
 }
 
-// percent is a float between 0.0 and 1.0
-esp_err_t Thermal_set_fan_percent(DeviceModel device_model, int board_version, float fan_percent, float beneath_fan_percent)
+//percent is a float between 0.0 and 1.0
+esp_err_t Thermal_set_fan_percent(DeviceConfig * DEVICE_CONFIG, float percent)
 {
-
-    switch (device_model) {
-    case DEVICE_ZYBER8S:
-    case DEVICE_ZYBER8G:
-        if (board_version >= 1110) {
-            EMC2302_set_fan_speed(1, fan_percent);
-            EMC2302_set_fan_speed(0, fan_percent);
-            EMC2101_set_fan_speed(beneath_fan_percent); // We set the rear fan to 85% fix rate
-        } else {
-            EMC2302_set_fan_speed(1, fan_percent);
-            EMC2302_set_fan_speed(0, beneath_fan_percent); // We set the rear fan to 85% fix rate
-        }
-        break;
-    default:
+    if(DEVICE_CONFIG->has_three_fan){
+        ESP_RETURN_ON_ERROR(EMC2101_set_fan_speed(percent), TAG, "Failed to set EMC2101 fan speed");
     }
+    ESP_RETURN_ON_ERROR(EMC2302_set_fan_speed(percent), TAG, "Failed to set EMC2302 fan1 speed");
     return ESP_OK;
 }
 
-uint16_t Thermal_get_fan_speed(DeviceModel device_model)
+uint16_t Thermal_get_fan_speed(DeviceConfig * DEVICE_CONFIG) 
 {
-    switch (device_model) {
-    case DEVICE_ZYBER8S:
-    case DEVICE_ZYBER8G:
-        return EMC2302_get_fan_speed(0); // May not be the best way to only get the first fan speed;
-    default:
+    if (DEVICE_CONFIG->EMC2302) {
+        return EMC2302_get_fan_speed();
+    }
+    return 0;
+}
+
+uint16_t Thermal_get_fan2_speed(DeviceConfig * DEVICE_CONFIG) 
+{
+    if (DEVICE_CONFIG->EMC2302) {
+        return EMC2302_get_fan2_speed();
     }
     return 0;
 }
@@ -62,17 +62,29 @@ float Thermal_get_chip_temp(GlobalState * GLOBAL_STATE)
         return -1;
     }
 
-    switch (GLOBAL_STATE->device_model) {
-    case DEVICE_ZYBER8S:
-    case DEVICE_ZYBER8G:
-        if (GLOBAL_STATE->board_version >= 1110) {
-            // uint8_t intt = EMC2101_get_external_temp();
-            // ESP_LOGW(TAG, "External temp: %d", (int)intt);
-            return TMP1075_read_temperature(0) + INTERNAL_OFFSET; // TMP1075 is on the front side
+    if(GLOBAL_STATE->DEVICE_CONFIG.has_three_fan){
+        if (GLOBAL_STATE->DEVICE_CONFIG.emc_internal_temp) {
+            return EMC2101_get_internal_temp();
+        } else {
+            return EMC2101_get_external_temp();
         }
-        return TMP1075_read_temperature_weighted();
-    default:
     }
+    if (GLOBAL_STATE->DEVICE_CONFIG.TMP1075) {
+        return TMP1075_read_temperature(0);
+    }
+    return -1;
+}
 
+float Thermal_get_chip_temp2(GlobalState * GLOBAL_STATE)
+{
+    if (!GLOBAL_STATE->ASIC_initalized) {
+        return -1;
+    }
+    if (GLOBAL_STATE->DEVICE_CONFIG.TMP1075) {
+        if(GLOBAL_STATE->DEVICE_CONFIG.has_three_fan){
+            return TMP1075_read_temperature(0);
+        }
+        return TMP1075_read_temperature(1);
+    }
     return -1;
 }

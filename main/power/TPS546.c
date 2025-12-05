@@ -26,11 +26,10 @@
 
 static const char *TAG = "TPS546";
 
-static uint8_t DEVICE_ID1[] = {0x54, 0x49, 0x54, 0x6B, 0x24, 0x41}; // TPS546D24A
-static uint8_t DEVICE_ID2[] = {0x54, 0x49, 0x54, 0x6D, 0x24, 0x41}; // TPS546D24A
-static uint8_t DEVICE_ID3[] = {0x54, 0x49, 0x54, 0x6D, 0x24, 0x62}; // TPS546D24S
-
-//static uint8_t COMPENSATION_CONFIG[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+static uint8_t DEVICE_ID_TPS546D24A[] = {0x54, 0x49, 0x54, 0x6D, 0x24, 0x41};
+static uint8_t DEVICE_ID_TPS546D24S[] = {0x54, 0x49, 0x54, 0x6D, 0x24, 0x62};
+// static uint8_t DEVICE_ID_TPS546B24A[] = {0x54, 0x49, 0x54, 0x6B, 0x24, 0x41};
+// static uint8_t DEVICE_ID_TPS546B24S[] = {0x54, 0x49, 0x54, 0x6B, 0x24, 0x62};
 
 static i2c_master_dev_handle_t tps546_i2c_handle;
 
@@ -332,7 +331,6 @@ static uint16_t float_2_ulinear16(float value)
 */
 esp_err_t TPS546_init(TPS546_CONFIG config)
 {
-	uint8_t data[7];
     uint8_t u8_value = 0;
     uint16_t u16_value = 0;
     uint8_t read_mfr_revision[4];
@@ -343,15 +341,34 @@ esp_err_t TPS546_init(TPS546_CONFIG config)
     tps546_config = config;
 
     ESP_LOGI(TAG, "Initializing the core voltage regulator");
-
     ESP_RETURN_ON_ERROR(i2c_bitaxe_add_device(TPS546_I2CADDR, &tps546_i2c_handle, TAG), TAG, "Failed to add TPS546 I2C");
 
-    /* Establish communication with regulator */
-    smb_read_block(PMBUS_IC_DEVICE_ID, data, 6); //the DEVICE_ID block first byte is the length.
-    ESP_LOGI(TAG, "Device ID: %02x %02x %02x %02x %02x %02x", data[0], data[1], data[2], data[3], data[4], data[5]);
-    /* There's 3 different known device IDs observed so far */
-    if ( (memcmp(data, DEVICE_ID1, 6) != 0) && (memcmp(data, DEVICE_ID2, 6) != 0) && (memcmp(data, DEVICE_ID3, 6) != 0))
-    {
+    // 1) Power-up guard (PMBus ready after AVIN UVLO + ~8 ms)
+    vTaskDelay(pdMS_TO_TICKS(15));  // conservative
+
+    // 2) Robust ID read with retries
+    uint8_t id[6] = {0};
+    const int max_attempts = 6;
+    bool id_matched = false;
+    for (int attempt = 0; attempt < max_attempts; ++attempt) {
+        esp_err_t err = smb_read_block(PMBUS_IC_DEVICE_ID, id, 6);  // ensure this API consumes the length byte internally
+        if (err == ESP_OK) {
+            if (memcmp(id, DEVICE_ID_TPS546D24A, 6) == 0
+             || memcmp(id, DEVICE_ID_TPS546D24S, 6) == 0
+            //  || memcmp(id, DEVICE_ID_TPS546B24A, 6) == 0
+            //  || memcmp(id, DEVICE_ID_TPS546B24S, 6) == 0
+                ) {
+                id_matched = true;  // got a real response
+                break;
+            }
+        }
+        vTaskDelay(pdMS_TO_TICKS(3));  // short backoff; total extra ~15 ms worst case
+    }
+
+    ESP_LOGI(TAG, "Device ID: %02x %02x %02x %02x %02x %02x", id[0], id[1], id[2], id[3], id[4], id[5]);
+
+    if (!id_matched) {
+
         ESP_LOGE(TAG, "Cannot find TPS546 regulator - Device ID mismatch");
         return ESP_FAIL;
     }
@@ -362,7 +379,7 @@ esp_err_t TPS546_init(TPS546_CONFIG config)
     smb_write_byte(PMBUS_OPERATION, u8_value);
 
     /* Make sure power is turned off until commanded */
-    u8_value = (ON_OFF_CONFIG_DELAY | ON_OFF_CONFIG_POLARITY | ON_OFF_CONFIG_CMD | ON_OFF_CONFIG_PU);
+    u8_value = (ON_OFF_CONFIG_DELAY | ON_OFF_CONFIG_POLARITY | ON_OFF_CONFIG_CP | ON_OFF_CONFIG_CMD | ON_OFF_CONFIG_PU);
     ESP_LOGI(TAG, "Power config-ON_OFF_CONFIG: %02X", u8_value);
     smb_write_byte(PMBUS_ON_OFF_CONFIG, u8_value);
 
@@ -511,8 +528,8 @@ void TPS546_write_entire_config(void)
     // }
 
     /* Phase */
-    // ESP_LOGI(TAG, "Setting PHASE: %02X", TPS546_INIT_PHASE);
-    // smb_write_byte(PMBUS_PHASE, TPS546_INIT_PHASE);
+    ESP_LOGI(TAG, "Setting PHASE: %02X", TPS546_INIT_PHASE);
+    smb_write_byte(PMBUS_PHASE, TPS546_INIT_PHASE);
 
     /* Switch frequency */
     ESP_LOGI(TAG, "Setting FREQUENCY: %dMHz", TPS546_INIT_FREQUENCY);
@@ -669,7 +686,7 @@ int TPS546_get_temperature(void)
 
 float TPS546_get_vin(void)
 {
-    uint16_t u16_value;
+    uint16_t u16_value = 0;
     float vin;
 
     /* Get voltage input (ULINEAR16) */
@@ -687,7 +704,7 @@ float TPS546_get_vin(void)
 
 float TPS546_get_iout(void)
 {
-    uint16_t u16_value;
+    uint16_t u16_value = 0;
     float iout;
 
     //set the phase register to 0xFF to read all phases
@@ -729,21 +746,20 @@ float TPS546_get_vout(void)
     }
 }
 
-esp_err_t TPS546_check_status(GlobalState * global_state) {
+esp_err_t TPS546_check_status(GlobalState * GLOBAL_STATE) {
 
+    SystemModule * SYSTEM_MODULE = &GLOBAL_STATE->SYSTEM_MODULE;
     uint16_t status;
-    SystemModule * sys_module = &global_state->SYSTEM_MODULE;
 
     ESP_RETURN_ON_ERROR(smb_read_word(PMBUS_STATUS_WORD, &status), TAG, "Failed to read STATUS_WORD");
     //determine if this is a fault we care about
-    //TPS546_STATUS_OFF |
-    if (status & ( TPS546_STATUS_OFF | TPS546_STATUS_VOUT_OV | TPS546_STATUS_IOUT_OC | TPS546_STATUS_VIN_UV | TPS546_STATUS_TEMP)) {
-        if (sys_module->power_fault == 0) {
+    if (status & (TPS546_STATUS_OFF | TPS546_STATUS_VOUT_OV | TPS546_STATUS_IOUT_OC | TPS546_STATUS_VIN_UV | TPS546_STATUS_TEMP)) {
+        if (SYSTEM_MODULE->power_fault == 0) {
             ESP_RETURN_ON_ERROR(TPS546_parse_status(status), TAG, "Failed to parse STATUS_WORD");
-            sys_module->power_fault = 1;
+            SYSTEM_MODULE->power_fault = 1;
         }
     } else {
-        sys_module->power_fault = 0;
+        SYSTEM_MODULE->power_fault = 0;
     }
     return ESP_OK;
 }

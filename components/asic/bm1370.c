@@ -9,6 +9,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "frequency_transition_bmXX.h"
+#include "pll.h"
 
 #include <math.h>
 #include <stdint.h>
@@ -20,70 +21,75 @@
 #define BM1370_CHIP_ID 0x1370
 #define BM1370_CHIP_ID_RESPONSE_LENGTH 11
 
-#ifdef CONFIG_GPIO_ASIC_RESET
-#define GPIO_ASIC_RESET CONFIG_GPIO_ASIC_RESET
-#else
-#define GPIO_ASIC_RESET 1
-#endif
-
 #define TYPE_JOB 0x20
 #define TYPE_CMD 0x40
 
 #define GROUP_SINGLE 0x00
 #define GROUP_ALL 0x10
 
-#define CMD_JOB 0x01
-
 #define CMD_SETADDRESS 0x00
 #define CMD_WRITE 0x01
 #define CMD_READ 0x02
 #define CMD_INACTIVE 0x03
 
-#define RESPONSE_CMD 0x00
-#define RESPONSE_JOB 0x80
-
-#define SLEEP_TIME 20
-#define FREQ_MULT 25.0
-
-#define CLOCK_ORDER_CONTROL_0 0x80
-#define CLOCK_ORDER_CONTROL_1 0x84
-#define ORDERED_CLOCK_ENABLE 0x20
-#define CORE_REGISTER_CONTROL 0x3C
-#define PLL3_PARAMETER 0x68
-#define FAST_UART_CONFIGURATION 0x28
-#define TICKET_MASK 0x14
+#define BM_CHIP_ID 0x00
 #define MISC_CONTROL 0x18
+#define FAST_UART_CONFIGURATION 0x28
+
+static const register_type_t REGISTER_MAP[] = {
+    [0x4C] = REGISTER_ERROR_COUNT,
+    [0x88] = REGISTER_DOMAIN_0_COUNT,
+    [0x89] = REGISTER_DOMAIN_1_COUNT,
+    [0x8A] = REGISTER_DOMAIN_2_COUNT,
+    [0x8B] = REGISTER_DOMAIN_3_COUNT,
+    [0x8C] = REGISTER_TOTAL_COUNT
+};
 
 typedef struct __attribute__((__packed__))
 {
-    uint16_t preamble;
-    uint32_t nonce;
-    uint8_t midstate_num;
-    uint8_t job_id;
-    uint16_t version;
-    uint8_t crc;
+    uint32_t nonce;                   // 2-5
+    uint8_t midstate_num;             // 6
+    uint8_t id;                       // 7
+    uint16_t version;                 // 8-9
+} bm1370_asic_result_job_t;
+
+typedef struct __attribute__((__packed__))
+{
+    uint32_t value;                   // 2-5
+    uint8_t asic_address;             // 6
+    uint8_t register_address;         // 7
+    uint16_t                  : 16;   // 8-9
+} bm1370_asic_result_cmd_t;
+
+typedef struct __attribute__((__packed__))
+{
+    uint16_t preamble;                // 0-1
+    union {
+        bm1370_asic_result_job_t job; // 2-9
+        bm1370_asic_result_cmd_t cmd; // 2-9
+    };
+    uint8_t crc             : 5;      // 10:0-5
+    uint8_t                 : 2;      // 10:6-7
+    uint8_t is_job_response : 1;      // 10:8
 } bm1370_asic_result_t;
 
-static const char * TAG = "bm1370Module";
+static const char * TAG = "bm1370";
 
 static task_result result;
 
-static float current_frequency = 56.25;
-
-static int norceCount=0;
+static int address_interval;
 
 /// @brief
 /// @param ftdi
 /// @param header
 /// @param data
 /// @param len
-static void _send_BM1370(uint8_t header, uint8_t * data, uint8_t data_len, bool debug)
+static void _send_BM1370(uint8_t header, const uint8_t * data, uint8_t data_len, bool debug)
 {
     packet_type_t packet_type = (header & TYPE_JOB) ? JOB_PACKET : CMD_PACKET;
-    uint8_t total_length = (packet_type == JOB_PACKET) ? (data_len + 6) : (data_len + 5);
+    const uint8_t total_length = (packet_type == JOB_PACKET) ? (data_len + 6) : (data_len + 5);
 
-    // allocate memory for buffer
-    unsigned char * buf = malloc(total_length);
+    uint8_t buf[total_length];
 
     // add the preamble
     buf[0] = 0x55;
@@ -111,31 +117,18 @@ static void _send_BM1370(uint8_t header, uint8_t * data, uint8_t data_len, bool 
     if (SERIAL_send(buf, total_length, debug) == 0) {
         ESP_LOGE(TAG, "Failed to send data to BM1370");
     }
-
-    free(buf);
-}
-
-static void _send_simple(uint8_t * data, uint8_t total_length)
-{
-    unsigned char * buf = malloc(total_length);
-    memcpy(buf, data, total_length);
-    SERIAL_send(buf, total_length, BM1370_SERIALTX_DEBUG);
-
-    free(buf);
 }
 
 static void _send_chain_inactive(void)
 {
-
-    unsigned char read_address[2] = {0x00, 0x00};
+    unsigned char read_address[] = {0x00, 0x00};
     // send serial data
     _send_BM1370((TYPE_CMD | GROUP_ALL | CMD_INACTIVE), read_address, 2, BM1370_SERIALTX_DEBUG);
 }
 
 static void _set_chip_address(uint8_t chipAddr)
 {
-
-    unsigned char read_address[2] = {chipAddr, 0x00};
+    unsigned char read_address[] = {chipAddr, 0x00};
     // send serial data
     _send_BM1370((TYPE_CMD | GROUP_SINGLE | CMD_SETADDRESS), read_address, 2, BM1370_SERIALTX_DEBUG);
 }
@@ -149,79 +142,23 @@ void BM1370_set_version_mask(uint32_t version_mask)
     _send_BM1370(TYPE_CMD | GROUP_ALL | CMD_WRITE, version_cmd, 6, BM1370_SERIALTX_DEBUG);
 }
 
-void BM1370_send_hash_frequency(float target_freq) {
-    // default 200Mhz if it fails
-    unsigned char freqbuf[6] = {0x00, 0x08, 0x40, 0xA0, 0x02, 0x41}; // freqbuf - pll0_parameter
-    float newf = 200.0;
+void BM1370_send_hash_frequency(float target_freq) 
+{
+    uint8_t fb_divider, refdiv, postdiv1, postdiv2;
+    float frequency;
 
-    uint8_t fb_divider = 0;
-    uint8_t post_divider1 = 0, post_divider2 = 0;
-    uint8_t ref_divider = 0;
-    float min_difference = 10;
-    float max_diff = 1.0;
-
-    // refdiver is 2 or 1
-    // postdivider 2 is 1 to 7
-    // postdivider 1 is 1 to 7 and greater than or equal to postdivider 2
-    // fbdiv is 0xa0 to 0xef
-    for (uint8_t refdiv_loop = 2; refdiv_loop > 0 && fb_divider == 0; refdiv_loop--) {
-        for (uint8_t postdiv1_loop = 7; postdiv1_loop > 0 && fb_divider == 0; postdiv1_loop--) {
-            for (uint8_t postdiv2_loop = 7; postdiv2_loop > 0 && fb_divider == 0; postdiv2_loop--) {
-                if (postdiv1_loop >= postdiv2_loop) {
-                    int temp_fb_divider = round(((float) (postdiv1_loop * postdiv2_loop * target_freq * refdiv_loop) / 25.0));
-
-                    if (temp_fb_divider >= 0xa0 && temp_fb_divider <= 0xef) {
-                        float temp_freq = 25.0 * (float) temp_fb_divider / (float) (refdiv_loop * postdiv2_loop * postdiv1_loop);
-                        float freq_diff = fabs(target_freq - temp_freq);
-
-                        if (freq_diff < min_difference && freq_diff < max_diff) {
-                            fb_divider = temp_fb_divider;
-                            post_divider1 = postdiv1_loop;
-                            post_divider2 = postdiv2_loop;
-                            ref_divider = refdiv_loop;
-                            min_difference = freq_diff;
-                            newf = temp_freq;
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    if (fb_divider == 0) {
-        ESP_LOGE(TAG, "Failed to find PLL settings for target frequency %.2f", target_freq);
-        return;
-    }
-
-    freqbuf[3] = fb_divider;
-    freqbuf[4] = ref_divider;
-    freqbuf[5] = (((post_divider1 - 1) & 0xf) << 4) + ((post_divider2 - 1) & 0xf);
-
-    if (fb_divider * 25 / (float) ref_divider >= 2400) {
-        freqbuf[2] = 0x50;
-    }
+    pll_get_parameters(target_freq, 160, 239, &fb_divider, &refdiv, &postdiv1, &postdiv2, &frequency);
+    
+    uint8_t vdo_scale = (fb_divider * FREQ_MULT / refdiv >= 2400) ? 0x50 : 0x40;
+    uint8_t postdiv = (((postdiv1 - 1) & 0xf) << 4) | ((postdiv2 - 1) & 0xf);
+    uint8_t freqbuf[6] = {0x00, 0x08, vdo_scale, fb_divider, refdiv, postdiv};
 
     _send_BM1370(TYPE_CMD | GROUP_ALL | CMD_WRITE, freqbuf, 6, BM1370_SERIALTX_DEBUG);
 
-    ESP_LOGI(TAG, "Setting Frequency to %.2fMHz (%.2f)", target_freq, newf);
+    ESP_LOGI(TAG, "Setting Frequency to %g MHz (%g)", target_freq, frequency);
 }
 
-static void do_frequency_ramp_up(float target_frequency) {
-    if (target_frequency == 0) {
-        ESP_LOGI(TAG, "Skipping frequency ramp");
-        return;
-    }
-    
-    ESP_LOGI(TAG, "Ramping up frequency from 56.25 MHz to %.2f MHz", target_frequency);
-    do_frequency_transition(target_frequency, BM1370_send_hash_frequency, 1370);
-}
-
-// Add a public function for external use
-bool BM1370_set_frequency(float target_freq) {
-    return do_frequency_transition(target_freq, BM1370_send_hash_frequency, 1370);
-}
-
-static uint8_t _send_init(uint64_t frequency, uint16_t asic_count)
+uint8_t BM1370_init(float frequency, uint16_t asic_count, uint16_t difficulty)
 {
     // set version mask
     for (int i = 0; i < 3; i++) {
@@ -229,14 +166,14 @@ static uint8_t _send_init(uint64_t frequency, uint16_t asic_count)
     }
 
     //read register 00 on all chips (should respond AA 55 13 68 00 00 00 00 00 00 0F)
-    unsigned char init3[7] = {0x55, 0xAA, 0x52, 0x05, 0x00, 0x00, 0x0A};
-    _send_simple(init3, 7);
+    _send_BM1370((TYPE_CMD | GROUP_ALL | CMD_READ), (uint8_t[]){0x00, BM_CHIP_ID}, 2, BM1370_SERIALTX_DEBUG);
 
     int chip_counter = count_asic_chips(asic_count, BM1370_CHIP_ID, BM1370_CHIP_ID_RESPONSE_LENGTH);
 
     if (chip_counter == 0) {
         return 0;
     }
+
 
     // set version mask
     BM1370_set_version_mask(STRATUM_DEFAULT_VERSION_MASK);
@@ -256,7 +193,7 @@ static uint8_t _send_init(uint64_t frequency, uint16_t asic_count)
     // _send_simple(init7, 7);
 
     // split the chip address space evenly
-    uint8_t address_interval = 16;
+    address_interval = 256 / chip_counter;
     for (uint8_t i = 0; i < chip_counter; i++) {
         _set_chip_address(i * address_interval);
         // unsigned char init8[7] = {0x55, 0xAA, 0x40, 0x05, 0x00, 0x00, 0x1C};
@@ -272,9 +209,10 @@ static uint8_t _send_init(uint64_t frequency, uint16_t asic_count)
     _send_BM1370((TYPE_CMD | GROUP_ALL | CMD_WRITE), (uint8_t[]){0x00, 0x3C, 0x80, 0x00, 0x80, 0x0C}, 6, BM1370_SERIALTX_DEBUG); //from S21Pro dump
     //_send_BM1370((TYPE_CMD | GROUP_ALL | CMD_WRITE), (uint8_t[]){0x00, 0x3C, 0x80, 0x00, 0x80, 0x18}, 6, BM1370_SERIALTX_DEBUG); //from S21 dump
 
-    //set ticket mask
-    // unsigned char init11[11] = {0x55, 0xAA, 0x51, 0x09, 0x00, 0x14, 0x00, 0x00, 0x00, 0xFF, 0x08};
-    BM1370_set_job_difficulty_mask(BM1370_ASIC_DIFFICULTY);
+    //set difficulty mask
+    uint8_t difficulty_mask[6];
+    get_difficulty_mask(difficulty, difficulty_mask);
+    _send_BM1370((TYPE_CMD | GROUP_ALL | CMD_WRITE), difficulty_mask, 6, BM1370_SERIALTX_DEBUG);    
 
     //Analog Mux Control -- not sent on S21 Pro?
     // unsigned char init12[11] = {0x55, 0xAA, 0x51, 0x09, 0x00, 0x54, 0x00, 0x00, 0x00, 0x03, 0x1D};
@@ -315,7 +253,7 @@ static uint8_t _send_init(uint64_t frequency, uint16_t asic_count)
     _send_BM1370((TYPE_CMD | GROUP_ALL | CMD_WRITE), (uint8_t[]){0x00, 0x3C, 0x80, 0x00, 0x8D, 0xEE}, 6, BM1370_SERIALTX_DEBUG);
 
     //ramp up the hash frequency
-    do_frequency_ramp_up(frequency);
+    do_frequency_transition(frequency, BM1370_send_hash_frequency);
 
     //register 10 is still a bit of a mystery. discussion: https://github.com/bitaxeorg/ESP-Miner/pull/167
 
@@ -330,21 +268,6 @@ static uint8_t _send_init(uint64_t frequency, uint16_t asic_count)
     return chip_counter;
 }
 
-// reset the BM1370 via the RTS line
-static void _reset(void)
-{
-    gpio_set_level(GPIO_ASIC_RESET, 0);
-
-    // delay for 100ms
-    vTaskDelay(100 / portTICK_PERIOD_MS);
-
-    // set the gpio pin high
-    gpio_set_level(GPIO_ASIC_RESET, 1);
-
-    // delay for 100ms
-    vTaskDelay(100 / portTICK_PERIOD_MS);
-}
-
 // static void _send_read_address(void)
 // {
 
@@ -353,25 +276,12 @@ static void _reset(void)
 //     _send_BM1370((TYPE_CMD | GROUP_ALL | CMD_READ), read_address, 2, BM1370_SERIALTX_DEBUG);
 // }
 
-uint8_t BM1370_init(uint64_t frequency, uint16_t asic_count)
-{
-    ESP_LOGI(TAG, "Initializing BM1370");
-
-    esp_rom_gpio_pad_select_gpio(GPIO_ASIC_RESET);
-    gpio_set_direction(GPIO_ASIC_RESET, GPIO_MODE_OUTPUT);
-
-    // reset the bm1370
-    _reset();
-
-    return _send_init(frequency, asic_count);
-}
-
 // Baud formula = 25M/((denominator+1)*8)
 // The denominator is 5 bits found in the misc_control (bits 9-13)
 int BM1370_set_default_baud(void)
 {
     // default divider of 26 (11010) for 115,749
-    unsigned char baudrate[9] = {0x00, MISC_CONTROL, 0x00, 0x00, 0b01111010, 0b00110001}; // baudrate - misc_control
+    unsigned char baudrate[] = {0x00, MISC_CONTROL, 0x00, 0x00, 0b01111010, 0b00110001}; // baudrate - misc_control
     _send_BM1370((TYPE_CMD | GROUP_ALL | CMD_WRITE), baudrate, 6, BM1370_SERIALTX_DEBUG);
     return 115749;
 }
@@ -381,45 +291,15 @@ int BM1370_set_max_baud(void)
     // divider of 0 for 3,125,000
     ESP_LOGI(TAG, "Setting max baud of 1000000 ");
 
-    unsigned char init8[11] = {0x55, 0xAA, 0x51, 0x09, 0x00, 0x28, 0x11, 0x30, 0x02, 0x00, 0x03};
-    _send_simple(init8, 11);
+    unsigned char fast_uart[] = {0x00, FAST_UART_CONFIGURATION, 0x11, 0x30, 0x02, 0x00};
+    _send_BM1370((TYPE_CMD | GROUP_ALL | CMD_WRITE), fast_uart, 6, BM1370_SERIALTX_DEBUG);
     return 1000000;
-}
-
-
-void BM1370_set_job_difficulty_mask(int difficulty)
-{
-    // Default mask of 256 diff
-    unsigned char job_difficulty_mask[9] = {0x00, TICKET_MASK, 0b00000000, 0b00000000, 0b00000000, 0b11111111};
-
-    // The mask must be a power of 2 so there are no holes
-    // Correct:  {0b00000000, 0b00000000, 0b11111111, 0b11111111}
-    // Incorrect: {0b00000000, 0b00000000, 0b11100111, 0b11111111}
-    // (difficulty - 1) if it is a pow 2 then step down to second largest for more hashrate sampling
-    difficulty = _largest_power_of_two(difficulty) - 1;
-
-    // convert difficulty into char array
-    // Ex: 256 = {0b00000000, 0b00000000, 0b00000000, 0b11111111}, {0x00, 0x00, 0x00, 0xff}
-    // Ex: 512 = {0b00000000, 0b00000000, 0b00000001, 0b11111111}, {0x00, 0x00, 0x01, 0xff}
-    for (int i = 0; i < 4; i++) {
-        char value = (difficulty >> (8 * i)) & 0xFF;
-        // The char is read in backwards to the register so we need to reverse them
-        // So a mask of 512 looks like 0b00000000 00000000 00000001 1111111
-        // and not 0b00000000 00000000 10000000 1111111
-
-        job_difficulty_mask[5 - i] = _reverse_bits(value);
-    }
-
-    ESP_LOGI(TAG, "Setting ASIC difficulty mask to %d", difficulty);
-
-    _send_BM1370((TYPE_CMD | GROUP_ALL | CMD_WRITE), job_difficulty_mask, 6, BM1370_SERIALTX_DEBUG);
 }
 
 static uint8_t id = 0;
 
 void BM1370_send_work(void * pvParameters, bm_job * next_bm_job)
 {
-
     GlobalState * GLOBAL_STATE = (GlobalState *) pvParameters;
 
     BM1370_job job;
@@ -455,22 +335,31 @@ task_result * BM1370_process_work(void * pvParameters)
 {
     bm1370_asic_result_t asic_result = {0};
 
+    memset(&result, 0, sizeof(task_result));
+
     if (receive_work((uint8_t *)&asic_result, sizeof(asic_result)) == ESP_FAIL) {
         return NULL;
     }
+    
+    if (!asic_result.is_job_response) {
+        result.register_type = REGISTER_MAP[asic_result.cmd.register_address];
+        if (result.register_type == REGISTER_INVALID) {
+            ESP_LOGW(TAG, "Unknown register read: %02x", asic_result.cmd.register_address);
+            return NULL;
+        }
+        result.asic_nr = asic_result.cmd.asic_address / address_interval;
+        result.value = ntohl(asic_result.cmd.value);
+        
+        return &result;
+    }
 
-    // uint8_t job_id = asic_result.job_id;
-    // uint8_t rx_job_id = ((int8_t)job_id & 0xf0) >> 1;
-    // ESP_LOGI(TAG, "Job ID: %02X, RX: %02X", job_id, rx_job_id);
-
-    // uint8_t job_id = asic_result.job_id & 0xf8;
-    // ESP_LOGI(TAG, "Job ID: %02X, Core: %01X", job_id, asic_result.job_id & 0x07);
-
-    uint8_t job_id = (asic_result.job_id & 0xf0) >> 1;
-    uint8_t core_id = (uint8_t)((ntohl(asic_result.nonce) >> 25) & 0x7f); // BM1370 has 80 cores, so it should be coded on 7 bits
-    uint8_t small_core_id = asic_result.job_id & 0x0f; // BM1370 has 16 small cores, so it should be coded on 4 bits
-    uint32_t version_bits = (ntohs(asic_result.version) << 13); // shift the 16 bit value left 13
-    ESP_LOGI(TAG, "Job ID: %02X, Core: %d/%d, Ver: %08" PRIX32, job_id, core_id, small_core_id, version_bits);
+    uint8_t job_id = (asic_result.job.id & 0xf0) >> 1;
+    uint32_t nonce_h = ntohl(asic_result.job.nonce);
+    uint8_t asic_nr = (uint8_t)((nonce_h >> 17) & 0xff) / address_interval; // Asic address is encoded in the next 8 bits
+    uint8_t core_id = (uint8_t)((nonce_h >> 25) & 0x7f); // BM1370 has 80 cores, so it should be coded on 7 bits
+    uint8_t small_core_id = asic_result.job.id & 0x0f; // BM1370 has 16 small cores, so it should be coded on 4 bits
+    uint32_t version_bits = (ntohs(asic_result.job.version) << 13); // shift the 16 bit value left 13
+    ESP_LOGI(TAG, "Job ID: %02X, Asic nr: %d, Core: %d/%d, Ver: %08" PRIX32, job_id, asic_nr, core_id, small_core_id, version_bits);
 
     GlobalState * GLOBAL_STATE = (GlobalState *) pvParameters;
 
@@ -482,26 +371,20 @@ task_result * BM1370_process_work(void * pvParameters)
     uint32_t rolled_version = GLOBAL_STATE->ASIC_TASK_MODULE.active_jobs[job_id]->version | version_bits;
 
     result.job_id = job_id;
-    result.nonce = asic_result.nonce;
+    result.nonce = asic_result.job.nonce;
     result.rolled_version = rolled_version;
-
-    uint8_t asic_nr = ((asic_result.nonce & 0x0000fc00)>>9)/16;
-    //ESP_LOGW(TAG,"ASIC NUM: %d", (int)asic_nr/16);
-
-    //uint8_t asic_nr = (asic_result->nonce & 0x0000fc00)>>10;
-    ESP_LOGI(TAG, "Chip: %d, Job ID: %02X, Core: %d/%d, Ver: %08" PRIX32, asic_nr+1, job_id, core_id, small_core_id, version_bits);
-    GLOBAL_STATE->chip_submit[asic_nr]= GLOBAL_STATE->chip_submit[asic_nr]+1;
-    if(norceCount%20==0){
-        sprintf(GLOBAL_STATE->chip_submit_srt,"[%lu, %lu, %lu, %lu, %lu, %lu, %lu, %lu]",
-            GLOBAL_STATE->chip_submit[0], GLOBAL_STATE->chip_submit[1], GLOBAL_STATE->chip_submit[2],
-            GLOBAL_STATE->chip_submit[3], GLOBAL_STATE->chip_submit[4], GLOBAL_STATE->chip_submit[5],
-            GLOBAL_STATE->chip_submit[6],GLOBAL_STATE->chip_submit[7]);
-        ESP_LOGI(TAG, "Asic Submit Count: %s", (char*)(GLOBAL_STATE->chip_submit_srt));
-    }
-    norceCount++;
-    if(norceCount==5000000){
-        norceCount=1;
-    }
+    result.asic_nr = asic_nr;
 
     return &result;
+}
+
+void BM1370_read_registers(void)
+{
+    int size = sizeof(REGISTER_MAP) / sizeof(REGISTER_MAP[0]);
+    for (int reg = 0; reg < size; reg++) {
+        if (REGISTER_MAP[reg] != REGISTER_INVALID) {
+            _send_BM1370((TYPE_CMD | GROUP_ALL | CMD_READ), (uint8_t[]){0x00, reg}, 2, BM1370_SERIALTX_DEBUG);
+            vTaskDelay(1 / portTICK_PERIOD_MS);
+        }
+    }
 }

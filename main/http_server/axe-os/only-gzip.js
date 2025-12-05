@@ -3,28 +3,32 @@ const path = require('path');
 
 const directory = './dist/axe-os';
 
-fs.readdir(directory, (err, files) => {
+function processDirectory(dirPath) {
+  fs.readdir(dirPath, (err, files) => {
     if (err) throw err;
 
+    const gzBase = new Set(files.filter(f => f.endsWith('.gz')).map(f => f.slice(0, -3)));
+
     for (const file of files) {
-        const filePath = path.join(directory, file);
+      const filePath = path.join(dirPath, file);
 
-        fs.stat(filePath, (err, stats) => {
+      fs.stat(filePath, (err, stats) => {
+        if (err) throw err;
+
+        // If it's a directory, process it recursively
+        if (stats.isDirectory()) {
+          return processDirectory(filePath);
+        }
+        // If it's a file and doesn't end with .gz, unlink it
+        if (gzBase.has(file) && !file.endsWith('.gz')) {
+          fs.unlink(filePath, (err) => {
             if (err) throw err;
-
-            if (stats.isDirectory()) {
-                // If it's a directory, call rmdir after deleting its contents
-                fs.rm(filePath, { recursive: true }, (err) => {
-                    if (err) throw err;
-                    console.log(`Removed directory: ${filePath}`);
-                });
-            } else if (!file.endsWith('.gz')) {
-                // If it's a file and doesn't end with .gz, unlink it
-                fs.unlink(filePath, (err) => {
-                    if (err) throw err;
-                    console.log(`Removed file: ${filePath}`);
-                });
-            }
-        });
+            console.log(`Removed file: ${filePath}`);
+          });
+        }
+      });
     }
-});
+  });
+}
+
+processDirectory(directory);

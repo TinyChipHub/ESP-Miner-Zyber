@@ -26,7 +26,7 @@
 #define QD_TYPE_A (0x0001)
 #define ANS_TTL_SEC (300)
 
-static const char * TAG = "example_dns_redirect_server";
+static const char * TAG = "dns_server";
 
 // DNS Header Packet
 typedef struct __attribute__((__packed__))
@@ -174,7 +174,7 @@ static int parse_dns_request(char * req, size_t req_len, char * dns_reply, size_
             uint8_t octet3 = (ip.addr >> 8) & 0xFF;
             uint8_t octet4 = ip.addr & 0xFF;
 
-            printf("IP address: %u.%u.%u.%u\n", octet1, octet2, octet3, octet4);
+            ESP_LOGI(TAG, "IP address: %u.%u.%u.%u\n", octet1, octet2, octet3, octet4);
 
             if (ip.addr == IPADDR_ANY) { // no rule applies, continue with another question
                 continue;
@@ -288,7 +288,7 @@ dns_server_handle_t start_dns_server(dns_server_config_t * config)
     handle->num_of_entries = config->num_of_entries;
     memcpy(handle->entry, config->item, config->num_of_entries * sizeof(dns_entry_pair_t));
 
-    xTaskCreate(dns_server_task, "dns_server", 4096, handle, 5, &handle->task);
+    xTaskCreateWithCaps(dns_server_task, "dns_server", 8192, handle, 5, &handle->task, MALLOC_CAP_SPIRAM);
     return handle;
 }
 

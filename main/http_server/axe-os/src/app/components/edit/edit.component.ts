@@ -1,19 +1,28 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, Input, OnInit, OnDestroy } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { Component, Input, OnInit, OnDestroy, OnChanges, SimpleChanges } from '@angular/core';
+import { FormBuilder, FormGroup, FormControl, Validators } from '@angular/forms';
 import { ToastrService } from 'ngx-toastr';
-import { startWith, Subject, takeUntil } from 'rxjs';
+import { forkJoin, startWith, Subject, takeUntil, pairwise, BehaviorSubject, Observable } from 'rxjs';
 import { LoadingService } from 'src/app/services/loading.service';
 import { SystemService } from 'src/app/services/system.service';
-import { eASICModel } from 'src/models/enum/eASICModel';
 import { ActivatedRoute } from '@angular/router';
+
+type Dropdown = {
+  name: string;
+  value: number;
+}[]
+
+const DISPLAY_TIMEOUT_STEPS = [0, 1, 2, 5, 15, 30, 60, 60 * 2, 60 * 4, 60* 8, -1];
+const STATS_FREQUENCY_STEPS = [0, 30, 60, 60 * 2, 60 * 6, 60 * 14, 60 * 28, 60 * 60];
 
 @Component({
   selector: 'app-edit',
-  templateUrl: './edit.component.html',
-  styleUrls: ['./edit.component.scss']
+  templateUrl: './edit.component.html'
 })
-export class EditComponent implements OnInit, OnDestroy {
+
+export class EditComponent implements OnInit, OnDestroy, OnChanges {
+  private formSubject = new BehaviorSubject<FormGroup | null>(null);
+  public form$: Observable<FormGroup | null> = this.formSubject.asObservable();
 
   public form!: FormGroup;
 
@@ -22,114 +31,20 @@ export class EditComponent implements OnInit, OnDestroy {
 
   public savedChanges: boolean = false;
   public settingsUnlocked: boolean = false;
-  public runningMode: number = 1;
-  public eASICModel = eASICModel;
-  public ASICModel!: eASICModel;
-  public restrictedModels: eASICModel[] = Object.values(eASICModel)
-    .filter((v): v is eASICModel => typeof v === 'string');
 
   @Input() uri = '';
 
-  public ScreenSaverTime = [
-    { name: 'Disabled', value: 0 },
-    { name: '5 minute', value: 5 },
-    { name: '10 minutes', value: 10 },
-    { name: '15 minutes', value: 15 },
-    { name: '30 minutes', value: 30 },
-    { name: '60 minutes', value: 60 }
-  ];
-
-  public BM1397DropdownFrequency = [
-    { name: '400', value: 400 },
-    { name: '425 (default)', value: 425 },
-    { name: '450', value: 450 },
-    { name: '475', value: 475 },
-    { name: '485', value: 485 },
-    { name: '500', value: 500 },
-    { name: '525', value: 525 },
-    { name: '550', value: 550 },
-    { name: '575', value: 575 },
-    { name: '590', value: 590 },
-    { name: '600', value: 600 },
-    { name: '610', value: 610 },
-    { name: '620', value: 620 },
-    { name: '630', value: 630 },
-    { name: '640', value: 640 },
-    { name: '650', value: 650 },
-  ];
-
-  public BM1366DropdownFrequency = [
-    { name: '400', value: 400 },
-    { name: '425', value: 425 },
-    { name: '450', value: 450 },
-    { name: '475', value: 475 },
-    { name: '485 (default)', value: 485 },
-    { name: '500', value: 500 },
-    { name: '525', value: 525 },
-    { name: '550', value: 550 },
-    { name: '575', value: 575 },
-  ];
-
-  public BM1368DropdownFrequency = [
-    { name: '400', value: 400 },
-    { name: '425', value: 425 },
-    { name: '450', value: 450 },
-    { name: '475', value: 475 },
-    { name: '490 (default)', value: 490 },
-    { name: '500', value: 500 },
-    { name: '525', value: 525 },
-    { name: '550', value: 550 },
-    { name: '575', value: 575 },
-  ];
-
-  public BM1370DropdownFrequency = [
-    { name: '400', value: 400 },
-    { name: '490', value: 490 },
-    { name: '525 (default)', value: 525 },
-    { name: '550', value: 550 },
-    { name: '575', value: 575 },
-    //{ name: '596', value: 596 },
-    { name: '600', value: 600 },
-    { name: '625', value: 625 },
-  ];
-
-  public BM1370CoreVoltage = [
-    { name: '1000', value: 1000 },
-    { name: '1060', value: 1060 },
-    { name: '1100', value: 1100 },
-    { name: '1150 (default)', value: 1150 },
-    { name: '1200', value: 1200 },
-    { name: '1250', value: 1250 },
-  ];
-
-  public BM1397CoreVoltage = [
-    { name: '1100', value: 1100 },
-    { name: '1150', value: 1150 },
-    { name: '1200', value: 1200 },
-    { name: '1250', value: 1250 },
-    { name: '1300', value: 1300 },
-    { name: '1350', value: 1350 },
-    { name: '1400', value: 1400 },
-    { name: '1450', value: 1450 },
-    { name: '1500', value: 1500 },
-  ];
-  public BM1366CoreVoltage = [
-    { name: '1100', value: 1100 },
-    { name: '1150', value: 1150 },
-    { name: '1200 (default)', value: 1200 },
-    { name: '1250', value: 1250 },
-    { name: '1300', value: 1300 },
-  ];
-  public BM1368CoreVoltage = [
-    { name: '1100', value: 1100 },
-    { name: '1150', value: 1150 },
-    { name: '1166 (default)', value: 1166 },
-    { name: '1200', value: 1200 },
-    { name: '1250', value: 1250 },
-    { name: '1300', value: 1300 },
-  ];
+  // Store frequency and voltage options from API
+  public defaultFrequency: number = 0;
+  public frequencyOptions: number[] = [];
+  public defaultVoltage: number = 0;
+  public voltageOptions: number[] = [];
 
   private destroy$ = new Subject<void>();
+
+  public rotations = [0, 90, 180, 270];
+  public displayTimeoutControl: FormControl;
+  public statsFrequencyControl: FormControl;
 
   constructor(
     private fb: FormBuilder,
@@ -161,10 +76,31 @@ export class EditComponent implements OnInit, OnDestroy {
         );
       }
     });
+
+    this.displayTimeoutControl = new FormControl();
+    this.displayTimeoutControl.valueChanges.pipe(pairwise()).subscribe(([prev, next]) => {
+      if (prev === next) {
+        return;
+      }
+
+      this.form.patchValue({ displayTimeout: DISPLAY_TIMEOUT_STEPS[next] });
+      this.form.controls['displayTimeout'].markAsDirty();
+    });
+
+    this.statsFrequencyControl = new FormControl();
+    this.statsFrequencyControl.valueChanges.pipe(pairwise()).subscribe(([prev, next]) => {
+      if (prev === next) {
+        return;
+      }
+
+      this.form.patchValue({ statsFrequency: STATS_FREQUENCY_STEPS[next] });
+      this.form.controls['statsFrequency'].markAsDirty();
+    });
   }
 
   private saveOverclockSetting(enabled: number) {
-    this.systemService.updateSystem(this.uri, { overclockEnabled: enabled })
+    const deviceUri = this.uri || '';
+    this.systemService.updateSystem(deviceUri, { overclockEnabled: enabled })
       .subscribe({
         next: () => {
           console.log(`Overclock setting saved: ${enabled === 1 ? 'enabled' : 'disabled'}`);
@@ -176,51 +112,103 @@ export class EditComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.systemService.getInfo(this.uri)
-      .pipe(
-        this.loadingService.lockUIUntilComplete(),
-        takeUntil(this.destroy$)
-      )
-      .subscribe(info => {
-        this.ASICModel = info.ASICModel;
-        this.runningMode = info.runningMode;
+    this.loadDeviceSettings();
+  }
 
-        // Check if overclock is enabled in NVS
-        if (info.overclockEnabled === 1) {
-          this.settingsUnlocked = true;
-          console.log(
-            '🎉 Overclock mode is enabled from NVS settings!\n' +
-            '⚡ Custom frequency and voltage values are available.'
-          );
-        }
+  ngOnChanges(changes: SimpleChanges): void {
+    // When URI changes, reload the device settings
+    if (changes['uri'] && changes['uri'].currentValue && !changes['uri'].firstChange) {
+      this.loadDeviceSettings();
+    }
+  }
+
+  private loadDeviceSettings(): void {
+    const deviceUri = this.uri || '';
+
+
+    // Fetch both system info and ASIC settings in parallel
+    forkJoin({
+      info: this.systemService.getInfo(deviceUri),
+      asic: this.systemService.getAsicSettings(deviceUri)
+    })
+    .pipe(
+      this.loadingService.lockUIUntilComplete(),
+      takeUntil(this.destroy$)
+    )
+    .subscribe(({ info, asic }) => {
+      // Store the frequency and voltage options from the API
+      this.defaultFrequency = asic.defaultFrequency;
+      this.frequencyOptions = asic.frequencyOptions;
+      this.defaultVoltage = asic.defaultVoltage;
+      this.voltageOptions = asic.voltageOptions;
+
+      // Check if overclock is enabled in NVS
+      if (info.overclockEnabled === 1) {
+        this.settingsUnlocked = true;
+        console.log(
+          '🎉 Overclock mode is enabled from NVS settings!\n' +
+          '⚡ Custom frequency and voltage values are available.'
+        );
+      }
 
         this.form = this.fb.group({
-          flipscreen: [info.flipscreen == 1],
           invertscreen: [info.invertscreen == 1],
-          coreVoltage: [info.coreVoltage, [Validators.required, Validators.max(1350)]],
+          displayAutoscroll: [info.displayAutoscroll],
+          displayTimeout: [info.displayTimeout, [
+            Validators.required,
+            Validators.min(-1),
+            Validators.max(this.displayTimeoutMaxValue)
+          ]],
+          coreVoltage: [info.coreVoltage, [Validators.required]],
           frequency: [info.frequency, [Validators.required]],
           autofanspeed: [info.autofanspeed == 1, [Validators.required]],
-          invertfanpolarity: [info.invertfanpolarity == 1, [Validators.required]],
-          fanspeed: [info.fanspeed, [Validators.required]],
-          beneathfanspeed:[info.beneathfanspeed,[Validators.required]],
+          minfanspeed: [info.minFanSpeed, [Validators.required]],
+          manualFanSpeed: [info.manualFanSpeed, [Validators.required]],
+          temptarget: [info.temptarget, [Validators.required]],
           overheat_mode: [info.overheat_mode, [Validators.required]],
-          screensavertime: [info.screensavertime, [Validators.required]],
-          isChipRestart: [info.isChipRestart==1, [Validators.required]],
+          statsFrequency: [info.statsFrequency, [
+            Validators.required,
+            Validators.min(0),
+            Validators.max(this.statsFrequencyMaxValue)
+          ]]
         });
 
-        this.form.controls['autofanspeed'].valueChanges.pipe(
-          startWith(this.form.controls['autofanspeed'].value),
-          takeUntil(this.destroy$)
-        ).subscribe(autofanspeed => {
-          if (autofanspeed) {
-            this.form.controls['fanspeed'].disable();
-            this.form.controls['beneathfanspeed'].disable();
-          } else {
-            this.form.controls['fanspeed'].enable();
-            this.form.controls['beneathfanspeed'].enable();
-          }
-        });
+        this.formSubject.next(this.form);
+
+      this.form.controls['autofanspeed'].valueChanges.pipe(
+        startWith(this.form.controls['autofanspeed'].value),
+        takeUntil(this.destroy$)
+      ).subscribe(autofanspeed => {
+        if (autofanspeed) {
+          this.form.controls['manualFanSpeed'].disable();
+          this.form.controls['temptarget'].enable();
+        } else {
+          this.form.controls['manualFanSpeed'].enable();
+          this.form.controls['temptarget'].disable();
+        }
       });
+
+      // Add custom value to predefined steps
+      if (DISPLAY_TIMEOUT_STEPS.filter(x => x === info.displayTimeout).length === 0) {
+        DISPLAY_TIMEOUT_STEPS.push(info.displayTimeout);
+        DISPLAY_TIMEOUT_STEPS.sort((a, b) => a - b);
+        DISPLAY_TIMEOUT_STEPS.push(DISPLAY_TIMEOUT_STEPS.shift() as number);
+      }
+
+      this.displayTimeoutControl.setValue(
+        DISPLAY_TIMEOUT_STEPS.findIndex(x => x === info.displayTimeout)
+      );
+
+      // Add custom value to predefined steps
+      if (STATS_FREQUENCY_STEPS.filter(x => x === info.statsFrequency).length === 0) {
+        STATS_FREQUENCY_STEPS.push(info.statsFrequency);
+        STATS_FREQUENCY_STEPS.sort((a, b) => a - b);
+      }
+
+      this.statsFrequencyControl.setValue(
+        STATS_FREQUENCY_STEPS.findIndex(x => x === info.statsFrequency)
+      );
+    });
   }
 
   ngOnDestroy(): void {
@@ -229,44 +217,28 @@ export class EditComponent implements OnInit, OnDestroy {
   }
 
   public updateSystem() {
-
     const form = this.form.getRawValue();
 
     if (form.stratumPassword === '*****') {
       delete form.stratumPassword;
     }
 
-    this.systemService.updateSystem(this.uri, form)
+    const deviceUri = this.uri || '';
+    this.systemService.updateSystem(deviceUri, form)
       .pipe(this.loadingService.lockUIUntilComplete())
       .subscribe({
         next: () => {
           const successMessage = this.uri ? `Saved settings for ${this.uri}` : 'Saved settings';
-          this.toastr.success(successMessage, 'Success!');
+          if (this.isRestartRequired) {
+            this.toastr.warning('You must restart this device after saving for changes to take effect.');
+          }
+          this.toastr.success(successMessage);
           this.savedChanges = true;
         },
         error: (err: HttpErrorResponse) => {
           const errorMessage = this.uri ? `Could not save settings for ${this.uri}. ${err.message}` : `Could not save settings. ${err.message}`;
-          this.toastr.error(errorMessage, 'Error');
+          this.toastr.error(errorMessage);
           this.savedChanges = false;
-        }
-      });
-  }
-
-  showWifiPassword: boolean = false;
-  toggleWifiPasswordVisibility() {
-    this.showWifiPassword = !this.showWifiPassword;
-  }
-
-  changeRunningMode(mode: number){    
-    this.systemService.updateSystem(this.uri, { runningMode: mode })
-      .pipe(this.loadingService.lockUIUntilComplete())
-      .subscribe({
-        next: () => {
-          this.runningMode = mode;
-          console.log(`Runing mode change to: ${this.runningMode}`);
-        },
-        error: (err) => {
-          console.error(`Failed to change running mode`);
         }
       });
   }
@@ -295,88 +267,84 @@ export class EditComponent implements OnInit, OnDestroy {
       .pipe(this.loadingService.lockUIUntilComplete())
       .subscribe({
         next: () => {
-          const successMessage = this.uri ? `Bitaxe at ${this.uri} restarted` : 'Bitaxe restarted';
-          this.toastr.success(successMessage, 'Success');
+          const successMessage = this.uri ? `Device at ${this.uri} restarted` : 'Device restarted';
+          this.toastr.success(successMessage);
         },
         error: (err: HttpErrorResponse) => {
           const errorMessage = this.uri ? `Failed to restart device at ${this.uri}. ${err.message}` : `Failed to restart device. ${err.message}`;
-          this.toastr.error(errorMessage, 'Error');
+          this.toastr.error(errorMessage);
         }
       });
   }
 
-  getScreenSaverTime() {
-    // Get base screen saver options
-    let options = [...this.ScreenSaverTime];
+  get dropdownFrequency(): Dropdown {
+    return this.buildDropdown('frequency', this.frequencyOptions, this.defaultFrequency);
+  }
 
-    // Get current screen saver value from form
-    const currentScreenSaver = this.form?.get('screensaver')?.value;
+  get dropdownVoltage(): Dropdown {
+    return this.buildDropdown('coreVoltage', this.voltageOptions, this.defaultVoltage);
+  }
 
-    // If current screen saver exists and isn't in the options
-    if (currentScreenSaver && !options.some(opt => opt.value === currentScreenSaver)) {
-        options.push({
-            name: `${currentScreenSaver} (Custom)`,
-            value: currentScreenSaver
-        });
-        // Sort options by value
-        options.sort((a, b) => a.value - b.value);
+  get displayTimeoutMaxSteps(): number {
+    return DISPLAY_TIMEOUT_STEPS.length - 1;
+  }
+
+  get displayTimeoutMaxValue(): number {
+    return DISPLAY_TIMEOUT_STEPS[this.displayTimeoutMaxSteps - 1];
+  }
+
+  get statsFrequencyMaxSteps(): number {
+    return STATS_FREQUENCY_STEPS.length - 1;
+  }
+
+  get statsFrequencyMaxValue(): number {
+    return STATS_FREQUENCY_STEPS[this.statsFrequencyMaxSteps];
+  }
+
+  buildDropdown(formField: string, apiOptions: number[], defaultValue: number): Dropdown {
+    if (!apiOptions.length) {
+      return [];
+    }
+
+    // Convert options from API to dropdown format
+    const options = apiOptions.map(option => {
+      return {
+        name: defaultValue === option ? `${option} (Default)` : `${option}`,
+        value: option
+      };
+    });
+
+    // Get current field value from form
+    const currentValue = this.form?.get(formField)?.value;
+
+    // If current field value exists and isn't in the options
+    if (currentValue && !options.some(opt => opt.value === currentValue)) {
+      options.push({
+        name: `${currentValue} (Custom)`,
+        value: currentValue
+      });
+      // Sort options by value
+      options.sort((a, b) => a.value - b.value);
     }
 
     return options;
   }
 
-  getDropdownFrequency() {
-    // Get base frequency options based on ASIC model
-    let options = [];
-    switch(this.ASICModel) {
-        case this.eASICModel.BM1366: options = [...this.BM1366DropdownFrequency]; break;
-        case this.eASICModel.BM1368: options = [...this.BM1368DropdownFrequency]; break;
-        case this.eASICModel.BM1370: options = [...this.BM1370DropdownFrequency]; break;
-        case this.eASICModel.BM1397: options = [...this.BM1397DropdownFrequency]; break;
-        default: return [];
-    }
-
-    // Get current frequency value from form
-    const currentFreq = this.form?.get('frequency')?.value;
-
-    // If current frequency exists and isn't in the options
-    if (currentFreq && !options.some(opt => opt.value === currentFreq)) {
-        options.push({
-            name: `${currentFreq} (Custom)`,
-            value: currentFreq
-        });
-        // Sort options by frequency value
-        options.sort((a, b) => a.value - b.value);
-    }
-
-    return options;
+  get noRestartFields(): string[] {
+    return [
+      'displayTimeout',
+      'coreVoltage',
+      'frequency',
+      'autofanspeed',
+      'manualFanSpeed',
+      'temptarget',
+      'overheat_mode',
+      'statsFrequency'
+    ];
   }
 
-  getCoreVoltage() {
-    // Get base voltage options based on ASIC model
-    let options = [];
-    switch(this.ASICModel) {
-        case this.eASICModel.BM1366: options = [...this.BM1366CoreVoltage]; break;
-        case this.eASICModel.BM1368: options = [...this.BM1368CoreVoltage]; break;
-        case this.eASICModel.BM1370: options = [...this.BM1370CoreVoltage]; break;
-        case this.eASICModel.BM1397: options = [...this.BM1397CoreVoltage]; break;
-        default: return [];
-    }
-
-    // Get current voltage value from form
-    const currentVoltage = this.form?.get('coreVoltage')?.value;
-
-    // If current voltage exists and isn't in the options
-    if (currentVoltage && !options.some(opt => opt.value === currentVoltage)) {
-        options.push({
-            name: `${currentVoltage} (Custom)`,
-            value: currentVoltage
-        });
-        // Sort options by voltage value
-        options.sort((a, b) => a.value - b.value);
-    }
-
-    return options;
+  get isRestartRequired(): boolean {
+    return !! Object.entries(this.form.controls)
+      .filter(([field, control]) => control.dirty && !this.noRestartFields.includes(field)).length
   }
-
 }

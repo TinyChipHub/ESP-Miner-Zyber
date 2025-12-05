@@ -1,7 +1,7 @@
 import 'chartjs-adapter-moment';
 
 import { CommonModule, HashLocationStrategy, LocationStrategy } from '@angular/common';
-import { HttpClientModule } from '@angular/common/http';
+import { provideHttpClient } from '@angular/common/http';
 import { NgModule } from '@angular/core';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { BrowserModule } from '@angular/platform-browser';
@@ -14,8 +14,13 @@ import { EditComponent } from './components/edit/edit.component';
 import { PoolComponent } from './components/pool/pool.component';
 import { NetworkEditComponent } from './components/network-edit/network.edit.component';
 import { HomeComponent } from './components/home/home.component';
-import { LoadingComponent } from './components/loading/loading.component';
+import { ModalComponent } from './components/modal/modal.component';
+import { TooltipIconComponent } from './components/tooltip-icon/tooltip-icon.component';
+import { TooltipTextIconComponent } from './components/tooltip-text-icon/tooltip-text-icon.component';
+import { ConfettiComponent } from './components/confetti/confetti.component';
 import { LogsComponent } from './components/logs/logs.component';
+import { SystemComponent } from './components/system/system.component';
+import { UpdateComponent } from './components/update/update.component';
 import { NetworkComponent } from './components/network/network.component';
 import { SettingsComponent } from './components/settings/settings.component';
 import { SwarmComponent } from './components/swarm/swarm.component';
@@ -25,11 +30,12 @@ import { AppLayoutModule } from './layout/app.layout.module';
 import { ANSIPipe } from './pipes/ansi.pipe';
 import { DateAgoPipe } from './pipes/date-ago.pipe';
 import { HashSuffixPipe } from './pipes/hash-suffix.pipe';
+import { DiffSuffixPipe } from './pipes/diff-suffix.pipe';
 import { PrimeNGModule } from './prime-ng.module';
 import { MessageModule } from 'primeng/message';
 import { TooltipModule } from 'primeng/tooltip';
 import { DialogModule } from 'primeng/dialog';
-import { DynamicDialogModule, DialogService as PrimeDialogService } from 'primeng/dynamicdialog';
+import { DialogService as PrimeDialogService } from 'primeng/dynamicdialog';
 import { DialogService, DialogListComponent } from './services/dialog.service';
 
 const components = [
@@ -37,10 +43,15 @@ const components = [
   EditComponent,
   NetworkEditComponent,
   HomeComponent,
-  LoadingComponent,
+  ModalComponent,
+  TooltipIconComponent,
+  TooltipTextIconComponent,
+  ConfettiComponent,
   NetworkComponent,
   SettingsComponent,
   LogsComponent,
+  SystemComponent,
+  UpdateComponent,
   PoolComponent
 ];
 
@@ -53,6 +64,7 @@ const components = [
     SwarmComponent,
     SettingsComponent,
     HashSuffixPipe,
+    DiffSuffixPipe,
     ThemeConfigComponent,
     DesignComponent,
     PoolComponent,
@@ -61,7 +73,6 @@ const components = [
   imports: [
     BrowserModule,
     AppRoutingModule,
-    HttpClientModule,
     ReactiveFormsModule,
     FormsModule,
     ToastrModule.forRoot({
@@ -73,13 +84,13 @@ const components = [
     AppLayoutModule,
     MessageModule,
     TooltipModule,
-    DialogModule,
-    DynamicDialogModule
+    DialogModule
   ],
   providers: [
     { provide: LocationStrategy, useClass: HashLocationStrategy },
     DialogService,
-    PrimeDialogService
+    PrimeDialogService,
+    provideHttpClient()
   ],
   bootstrap: [AppComponent]
 })

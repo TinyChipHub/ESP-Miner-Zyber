@@ -18,11 +18,9 @@
 #include "nvs_config.h"
 #include "rom/gpio.h"
 #include <stdio.h>
-// #include "driver/i2c_master.h"
-// #include "driver/i2c_types.h"
-// #include "esp_lcd_panel_ssd1306.h"
 
 static const char * TAG = "display";
+static const char * LVGL_TAG = "lvgl";
 
 static lv_theme_t theme;
 static lv_style_t scr_style;
@@ -36,11 +34,34 @@ static void theme_apply(lv_theme_t * theme, lv_obj_t * obj)
     }
 }
 
+static void my_log_cb(lv_log_level_t level, const char * buf)
+{
+    switch (level) {
+        case LV_LOG_LEVEL_TRACE:
+            ESP_LOGV(LVGL_TAG, "%s", buf);
+            break;
+        case LV_LOG_LEVEL_INFO:
+            ESP_LOGI(LVGL_TAG, "%s", buf);
+            break;
+        case LV_LOG_LEVEL_WARN:
+            ESP_LOGW(LVGL_TAG, "%s", buf);
+            break;
+        case LV_LOG_LEVEL_ERROR:
+            ESP_LOGE(LVGL_TAG, "%s", buf);
+            break;
+        case LV_LOG_LEVEL_USER:
+            ESP_LOGI(LVGL_TAG, "%s", buf);
+            break;
+        case LV_LOG_LEVEL_NONE:
+            break;
+    }
+}
+
 esp_err_t display_init(void * pvParameters)
 {
     GlobalState * GLOBAL_STATE = (GlobalState *) pvParameters;
 
-    uint8_t flip_screen = nvs_config_get_u16(NVS_CONFIG_FLIP_SCREEN, 1);
+    bool flip_screen = nvs_config_get_bool(NVS_CONFIG_INVERT_SCREEN);
 
     ESP_LOGI(TAG, "=============Starting Display Initialization Sequence============");
     ESP_LOGI(TAG, "Turn off LCD backlight");
@@ -137,6 +158,8 @@ esp_err_t display_init(void * pvParameters)
 
     const lvgl_port_cfg_t lvgl_cfg = ESP_LVGL_PORT_INIT_CONFIG();
     ESP_RETURN_ON_ERROR(lvgl_port_init(&lvgl_cfg), TAG, "LVGL init failed");
+
+    lv_log_register_print_cb(my_log_cb);
 
     const lvgl_port_display_cfg_t disp_cfg = {
         .io_handle = io_handle,

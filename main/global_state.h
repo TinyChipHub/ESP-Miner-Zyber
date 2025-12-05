@@ -1,18 +1,17 @@
 #ifndef GLOBAL_STATE_H_
 #define GLOBAL_STATE_H_
 
+#include <stdbool.h>
+#include <stdint.h>
 #include "asic_task.h"
-#include "bm1366.h"
-#include "bm1368.h"
-#include "bm1370.h"
-#include "bm1397.h"
 #include "common.h"
 #include "power_management_task.h"
+#include "hashrate_monitor_task.h"
 #include "serial.h"
 #include "stratum_api.h"
 #include "work_queue.h"
-#include <stdbool.h>
-#include <stdint.h>
+#include "device_config.h"
+#include "display.h"
 
 #define STRATUM_USER CONFIG_STRATUM_USER
 #define FALLBACK_STRATUM_USER CONFIG_FALLBACK_STRATUM_USER
@@ -20,51 +19,19 @@
 #define HISTORY_LENGTH 100
 #define DIFF_STRING_SIZE 10
 
-typedef enum
-{
-    DEVICE_UNKNOWN = -1,
-    DEVICE_ZYBER8S,
-    DEVICE_ZYBER8G,
-    DEVICE_ZYBER8GPLUS,
-
-} DeviceModel;
-
-typedef enum
-{
-    ASIC_UNKNOWN = -1,
-    ASIC_BM1397,
-    ASIC_BM1366,
-    ASIC_BM1368,
-    ASIC_BM1370,
-} AsicModel;
-
-// typedef struct
-// {
-//     uint8_t (*init_fn)(uint64_t, uint16_t);
-//     task_result * (*receive_result_fn)(void * GLOBAL_STATE);
-//     int (*set_max_baud_fn)(void);
-//     void (*set_difficulty_mask_fn)(int);
-//     void (*send_work_fn)(void * GLOBAL_STATE, bm_job * next_bm_job);
-//     void (*set_version_mask)(uint32_t);
-// } AsicFunctions;
-
-typedef struct
-{
+typedef struct {
     char message[64];
     uint32_t count;
 } RejectedReasonStat;
 
 typedef struct
 {
-    double duration_start;
-    int historical_hashrate_rolling_index;
-    double historical_hashrate_time_stamps[HISTORY_LENGTH];
-    double historical_hashrate[HISTORY_LENGTH];
-    int historical_hashrate_init;
-    double current_hashrate;
+    float current_hashrate;
+    float error_percentage;
     int64_t start_time;
     uint64_t shares_accepted;
     uint64_t shares_rejected;
+    uint64_t work_received;
     RejectedReasonStat rejected_reason_stats[10];
     int rejected_reason_stats_count;
     int screen_page;
@@ -72,14 +39,16 @@ typedef struct
     char best_diff_string[DIFF_STRING_SIZE];
     uint64_t best_session_nonce_diff;
     char best_session_diff_string[DIFF_STRING_SIZE];
-    bool FOUND_BLOCK;
+    bool block_found;
     char ssid[32];
-    char mac[20];
-    char wifi_status[20];
+    char mac[18];
+    char wifi_status[256];
     char ip_addr_str[16]; // IP4ADDR_STRLEN_MAX
+    char ipv6_addr_str[64]; // IPv6 address string with zone identifier (INET6_ADDRSTRLEN=46 + % + interface=15)
     char ap_ssid[32];
     char ap_gw[16];
     bool ap_enabled;
+    bool is_connected;
     char * pool_url;
     char * fallback_pool_url;
     uint16_t pool_port;
@@ -88,8 +57,15 @@ typedef struct
     char * fallback_pool_user;
     char * pool_pass;
     char * fallback_pool_pass;
+    uint16_t pool_difficulty;
+    uint16_t fallback_pool_difficulty;
+    bool pool_extranonce_subscribe;
+    bool fallback_pool_extranonce_subscribe;
+    double response_time;
+    bool use_fallback_stratum;
     bool is_using_fallback;
-    uint16_t overheat_mode;
+    int pool_addr_family;
+    bool overheat_mode;
     uint16_t power_fault;
     uint32_t lastClockSync;
     bool is_screen_active;
@@ -97,37 +73,29 @@ typedef struct
     char firmware_update_filename[20];
     char firmware_update_status[20];
     char * asic_status;
-
     char mining_addr[64];
-    double network_diff;
-    uint32_t block_found;
 } SystemModule;
 
 typedef struct
 {
-    bool active;
-    char * message;
-    bool result;
-    bool finished;
+    bool is_active;
+    bool is_finished;
+    char *message;
+    char *result;
+    char *finished;
 } SelfTestModule;
 
 typedef struct
 {
-    DeviceModel device_model;
-    char * device_model_str;
-    int board_version;
-    AsicModel asic_model;
-    char * asic_model_str;
-    double asic_job_frequency_ms;
-    uint32_t ASIC_difficulty;
-
     work_queue stratum_queue;
     work_queue ASIC_jobs_queue;
 
     SystemModule SYSTEM_MODULE;
+    DeviceConfig DEVICE_CONFIG;
     AsicTaskModule ASIC_TASK_MODULE;
     PowerManagementModule POWER_MANAGEMENT_MODULE;
     SelfTestModule SELF_TEST_MODULE;
+    HashrateMonitorModule HASHRATE_MONITOR_MODULE;
 
     char * extranonce_str;
     int extranonce_2_len;
@@ -136,7 +104,8 @@ typedef struct
     uint8_t * valid_jobs;
     pthread_mutex_t valid_jobs_lock;
 
-    uint32_t stratum_difficulty;
+    uint32_t pool_difficulty;
+    bool new_set_mining_difficulty_msg;
     uint32_t version_mask;
     bool new_stratum_version_rolling_msg;
 
@@ -148,21 +117,12 @@ typedef struct
 
     bool ASIC_initalized;
     bool psram_is_available;
-    bool queue_initalized;
 
-    uint32_t chip_submit[12];
-    char chip_submit_srt[128];
-
-    uint16_t runningMode;
-
-    TaskHandle_t job_task_h;
-    TaskHandle_t asic_task_h;
-    TaskHandle_t asic_result_task_h;
-    bool is_chips_fail_detected;
-    bool chips_reset_retart;
-    uint16_t screen_saver_time;
-    uint8_t chips_count;
-
+    int block_height;
+    char * scriptsig;
+    uint64_t network_nonce_diff;
+    char network_diff_string[DIFF_STRING_SIZE];
+    
 } GlobalState;
 
 #endif /* GLOBAL_STATE_H_ */

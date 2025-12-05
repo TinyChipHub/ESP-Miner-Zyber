@@ -8,8 +8,6 @@ cmake_minimum_required(VERSION 3.5)
 
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 
-set(PROJECT_VER "Zyber-v2.8.0-TCH")
-
 add_compile_definitions(LV_MEM_CUSTOM=1)
 add_compile_definitions(LV_MEM_CUSTOM_INCLUDE=<lvgl_psram.h>)
 add_compile_definitions(LV_MEM_CUSTOM_ALLOC=lv_psram_alloc)
@@ -18,7 +16,8 @@ add_compile_definitions(LV_MEM_CUSTOM_REALLOC=lv_psram_realloc)
 
 add_compile_definitions(CONFIG_BOARD_ZYBER_8S=$ENV{CONFIG_BOARD_ZYBER_8S})
 add_compile_definitions(CONFIG_BOARD_ZYBER_8G=$ENV{CONFIG_BOARD_ZYBER_8G})
+# set(PROJECT_VER "Zyber-v2.11.1-TCH")
+
 
 project(esp-miner)
-
 

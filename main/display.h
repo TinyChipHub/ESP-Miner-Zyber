@@ -1,7 +1,8 @@
 #ifndef DISPLAY_H_
 #define DISPLAY_H_
 
-#include "driver/gpio.h"
+#include "esp_err.h"
+//#include "driver/gpio.h"
 
 // LCD data lines
 #define DISPLAY_PIN_DATA0 (gpio_num_t) 6
@@ -40,5 +41,6 @@
 #define DISPLAY_LCD_PARAM_BITS 8 // Bits for LCD parameters
 
 esp_err_t display_init(void * pvParameters);
+// esp_err_t display_on(bool display_on);
 
 #endif /* DISPLAY_H_ */

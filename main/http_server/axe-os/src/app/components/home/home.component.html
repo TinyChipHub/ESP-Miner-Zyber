@@ -1,285 +1,469 @@
-<ng-template #loading>
-    <h4>Loading...</h4>
-</ng-template>
-<ng-container *ngIf="info$ | async as info; else loading">
-    <!-- Temp warning alert -->
-    <p-message *ngIf="info.overheat_mode" severity="error" styleClass="w-full mb-4 py-4 border-round-xl"
-        text="Bitaxe has overheated - See settings">
+<ng-template #noValue>--</ng-template>
+
+<ng-container *ngIf="info$ | async as info">
+    <ng-container *ngFor="let message of messages">
+        <p-message
+            [severity]="message.severity"
+            [text]="message.text"
+            [styleClass]="'w-full mb-3 py-3 border-round-lg'"
+        />
+    </ng-container>
+
+    <p-message *ngIf="info.blockFound" severity="success" styleClass="w-full mb-4 py-4 border-round-xl"
+        text="Today is your lucky day! Your device has found a block 🎉">
     </p-message>
 
-    <p-message *ngIf="!info.frequency || info.frequency < 400" severity="warn" styleClass="w-full mb-4 py-4 border-round-xl"
-        text="Bitaxe frequency is set low - See settings">
-    </p-message>
+    <div class="grid">
+        <div class="col-12 md:col-6 xl:col-3">
+            <div class="card mb-0">
+                <div class="flex flex-column justify-content-between">
+                    <span class="block text-500 font-medium mb-3">Hashrate</span>
 
-    <p-message *ngIf="info.power_fault" severity="error" styleClass="w-full mb-4 py-4 border-round-xl"
-        text="{{info.power_fault}} Check your Power Supply.">
-    </p-message>
-
-    <div class="grid" *ngIf="info$ | async as info; else loading">
-        <div class="col-12">
-            <div class="grid">
-                <div class="col-12 md:col-6 xl:col-3">
-                    <div class="card mb-0">
-                        <div class="flex justify-content-between mb-3">
-                            <div>
-                                <span class="block text-500 font-medium mb-3">Hash Rate</span>
-                                <div class="text-900 font-medium text-2xl flex align-items-center gap-2">
-                                    <span *ngIf="!info.power_fault">
-                                        {{info.hashRate * 1000000000 | hashSuffix}}
-                                    </span>
-                                    <span *ngIf="info.power_fault" class="text-red-500">
-                                        Not available - Power fault
-                                    </span>
-                                </div>
-                            </div>
+                    <ng-container *ngIf="!info.power_fault; else powerFault">
+                        <div class="flex align-items-baseline gap-2 mb-3">
+                            <span class="text-900 font-medium text-2xl">
+                                {{info.hashRate | hashSuffix}}
+                            </span>
+                            <span class="text-500 text-xs">
+                                <tooltip-text-icon
+                                    text="Error: {{info.errorPercentage | number: '1.2-2'}}%"
+                                    tooltip="Hash error percentage as reported by the ASIC. A small amount of errors every few seconds is normal. Frequency changes, agressive overclocking, undervoltage or a bad power supply can significantly increase the error rate."
+                                />
+                            </span>
                         </div>
 
-                        <ng-container *ngIf="!info.power_fault">
+                        <div>
                             Average:
                             <span class="text-green-500 font-medium">
-                                {{calculateAverage(hashrateData) | hashSuffix}}
+                                {{getHashrateAverage() | hashSuffix}}
                             </span>
-                        </ng-container>
-
-                        <div class="text-500 text-xs" *ngIf="!info.power_fault && (expectedHashRate$ | async) as expectedHashRate">
-                            Expected: {{expectedHashRate * 1000000000 | hashSuffix}}
                         </div>
-                    </div>
+                        <div class="text-500 text-xs" *ngIf="info.expectedHashrate">
+                            Expected: {{info.expectedHashrate | hashSuffix: { tickmark: true } }}
+                        </div>
+                    </ng-container>
+
+                    <ng-template #powerFault>
+                        <span class="text-red-500">
+                            Not available - Power fault
+                        </span>
+                    </ng-template>
                 </div>
-                <div class="col-12 md:col-6 xl:col-3">
-                    <div class="card mb-0">
-                        <div class="flex justify-content-between mb-3">
-                            <div>
-                                <span class="block text-500 font-medium mb-3">Efficiency</span>
-                                <div class="text-900 font-medium text-2xl flex align-items-center gap-2">
-                                    <span *ngIf="!info.power_fault">
-                                        {{info.power / (info.hashRate/1000) | number: '1.2-2'}} <small>J/TH</small>
-                                    </span>
-                                    <span *ngIf="info.power_fault" class="text-red-500">
-                                        Not available - Power fault
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <ng-container *ngIf="!info.power_fault">
-                            Average:
-                            <span class="text-green-500 font-medium">
-                                {{calculateEfficiencyAverage(hashrateData, powerData) | number: '1.2-2'}} <small>J/TH</small>
+            </div>
+        </div>
+        <div class="col-12 md:col-6 xl:col-3">
+            <div class="card mb-0">
+                <div class="flex justify-content-between mb-3">
+                    <div>
+                        <span class="block text-500 font-medium mb-3">Efficiency</span>
+                        <div class="text-900 font-medium text-2xl flex align-items-center gap-2">
+                            <span *ngIf="!info.power_fault">
+                                {{getEfficiency(info) | number: '1.2-2'}} J/Th
                             </span>
+                            <span *ngIf="info.power_fault" class="text-red-500">
+                                Not available - Power fault
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <ng-container *ngIf="!info.power_fault">
+                    Average:
+                    <span class="text-green-500 font-medium">
+                        {{getEfficiencyAverage() | number: '1.2-2'}} J/Th
+                    </span>
+                </ng-container>
+
+                <div class="text-500 text-xs" *ngIf="!info.power_fault && info.expectedHashrate">
+                    Expected: {{getExpectedEfficiency(info) | number: '1.2-2'}} J/Th
+                </div>
+            </div>
+        </div>
+        <div class="col-12 md:col-6 xl:col-3">
+            <div class="card mb-0">
+                <div class="flex justify-content-between mb-3">
+                    <div>
+                        <span class="block text-500 font-medium mb-3">Shares</span>
+                        <div class="text-900 font-medium text-2xl">{{info.sharesAccepted | number: '1.0-0'}}
+                        </div>
+                    </div>
+                </div>
+                <div *ngIf="info.sharesRejected === 0">
+                    <span class="text-red-500 font-medium">0 </span>
+                    <span class="text-500">rejected</span>
+                </div>
+                <ng-container *ngIf="info.sharesRejected > 0">
+                    <div *ngFor="let sharesRejectedReason of getSortedRejectionReasons(info); trackBy: trackByReason">
+                        <span class="text-red-500 font-medium">
+                            {{ sharesRejectedReason.count | number: '1.0-0' }}
+                        </span>
+                        <span class="text-500">
+                            {{ sharesRejectedReason.message }}
+                        </span>
+                        <tooltip-text-icon
+                            [text]="'(' + (getShareRejectionPercentage(sharesRejectedReason, info) | number:'1.2-2') + ' %)'"
+                            [tooltip]="getRejectionExplanation(sharesRejectedReason.message)"
+                            [split]=false />
+                    </div>
+                </ng-container>
+            </div>
+        </div>
+
+        <div class="col-12 md:col-6 xl:col-3">
+            <div class="card mb-0">
+                <div class="flex justify-content-between mb-3">
+                    <div>
+                        <span class="block text-500 font-medium mb-3">Best Difficulty</span>
+                        <div class="text-900 font-medium text-2xl">{{info.bestDiff | diffSuffix}}
+                            <span class="text-500 text-lg">all-time best</span>
+                        </div>
+                    </div>
+                </div>
+                <span class="text-900 font-medium">{{info.bestSessionDiff | diffSuffix}} </span>
+                <span class="text-500">since system boot</span>
+            </div>
+        </div>
+
+        <div class="col-12" *ngIf="!info.power_fault">
+            <div class="card">
+                <form [formGroup]="form">
+                    <div class="flex flex-nowrap justify-content-between mb-3">
+                        <p-dropdown
+                            [options]="dataSourceLabels(info)"
+                            optionLabel="name"
+                            optionValue="value"
+                            formControlName="chartY1Data"
+                            styleClass="w-10rem border-100 p-dropdown--small">
+                        </p-dropdown>
+                        <p-dropdown
+                            [options]="dataSourceLabels(info)"
+                            optionLabel="name"
+                            optionValue="value"
+                            formControlName="chartY2Data"
+                            styleClass="w-10rem border-100 p-dropdown--small">
+                        </p-dropdown>
+                    </div>
+
+                    <p-chart #chart id="chart" [data]="chartData" [options]="chartOptions"></p-chart>
+                </form>
+            </div>
+        </div>
+
+        <div class="col-12 md:col-4">
+            <div class="card">
+                <h4 class="text-center">Power</h4>
+
+                <div class="mb-3">
+                    <h6 class="flex justify-content-between mb-1">
+                        Power<span>{{info.power}} W</span>
+                    </h6>
+                    <p-progressBar [value]="(info.power / info.maxPower) * 100" [styleClass]="'p-progressbar--thin'">
+                        <ng-template pTemplate="content" let-value></ng-template>
+                    </p-progressBar>
+                </div>
+
+                <div class="mb-3">
+                    <h6 class="flex justify-content-between mb-1">
+                        Input Voltage<span>{{info.voltage}} V</span>
+                    </h6>
+                    <div class="relative">
+                        <p-progressBar [value]="(info.voltage / (info.nominalVoltage + .5)) * 100"
+                            [styleClass]="'p-progressbar--thin'">
+                            <ng-template pTemplate="content" let-value></ng-template>
+                        </p-progressBar>
+
+                        <!-- Conditional marker based on nominal voltage-->
+                        <div class="absolute bg-white h-full top-0"
+                            [style.left]="(info.nominalVoltage / (info.nominalVoltage + .5)) * 100 + '%'"
+                            style="width: 3px;">
+                            <small class="absolute text-white white-space-nowrap text-xs"
+                                style="bottom: -1rem; transform: translateX(-50%)">
+                                {{info.nominalVoltage}} V
+                            </small>
+                        </div>
+                    </div>
+                    <strong class="text-red-500" *ngIf="info.voltage < (info.nominalVoltage + .5) * 0.87">
+                        Danger: Low Voltage
+                    </strong>
+                </div>
+
+                <div class="mb-3">
+                    <h6 class="flex justify-content-between mb-1">
+                        ASIC Frequency<span>{{info.frequency}} MHz</span>
+                    </h6>
+                    <p-progressBar [value]="(info.frequency / maxFrequency) * 100" [styleClass]="'p-progressbar--thin'">
+                        <ng-template pTemplate="content" let-value></ng-template>
+                    </p-progressBar>
+                </div>
+
+                <div>
+                    <h6 class="flex justify-content-between mb-1">
+                        Measured ASIC Voltage<span>{{info.coreVoltageActual}} V</span>
+                    </h6>
+                    <p-progressBar [value]="(info.coreVoltageActual / 1.8) * 100" [styleClass]="'p-progressbar--thin'">
+                        <ng-template pTemplate="content" let-value></ng-template>
+                    </p-progressBar>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 md:col-4">
+            <div class="card">
+                <h4 class="text-center">Heat</h4>
+
+                <div class="mb-3">
+                    <h6 class="flex justify-content-between mb-1">
+                        <ng-container *ngIf="info.temp2 > 0; else singleTemp">
+                            ASIC Temperature 1
                         </ng-container>
+                        <ng-template #singleTemp>
+                            ASIC Temperature
+                        </ng-template>
+                        <span>
+                            <ng-container *ngIf="info.temp > 0; else noValue">
+                                {{info.temp}} &deg;C
+                            </ng-container>
+                        </span>
+                    </h6>
+                    <p-progressBar [value]="(info.temp / maxTemp) * 100" [styleClass]="'p-progressbar--thin'">
+                        <ng-template pTemplate="content" let-value></ng-template>
+                    </p-progressBar>
 
-                        <div class="text-500 text-xs" *ngIf="!info.power_fault && (expectedHashRate$ | async) as expectedHashRate">
-                            Expected: {{info.power / (expectedHashRate/1000) | number: '1.2-2'}} J/TH
-                        </div>
-                    </div>
-                </div>
-                <div class="col-12 md:col-6 xl:col-3">
-                    <div class="card mb-0">
-                        <div class="flex justify-content-between mb-3">
-                            <div>
-                                <span class="block text-500 font-medium mb-3">Shares</span>
-                                <div class="text-900 font-medium text-2xl">{{info.sharesAccepted | number: '1.0-0'}}
-                                </div>
-                            </div>
-                        </div>
-                        <div *ngIf="info.sharesRejected === 0">
-                            <span class="text-red-500 font-medium">0 </span>
-                            <span class="text-500">rejected</span>
-                        </div>
-                        <div *ngIf="info.sharesRejected > 0">
-                            <div *ngFor="let sharesRejectedReason of info.sharesRejectedReasons">
-                                <span class="text-red-500 font-medium">{{sharesRejectedReason.count | number: '1.0-0'}} </span>
-                                <span class="text-500">{{sharesRejectedReason.message}}</span>
-                                ({{(sharesRejectedReason.count / (info.sharesAccepted + info.sharesRejected) * 100) | number: '1.2-2'}}%)
-                            </div>
-                        </div>
-                    </div>
+                    <strong class="text-red-500" *ngIf="info.temp >= 70">
+                        Danger: High Temperature
+                    </strong>
                 </div>
 
-                <div class="col-12 md:col-6 xl:col-3">
-                    <div class="card mb-0">
-                        <div class="flex justify-content-between mb-3">
-                            <div>
-                                <span class="block text-500 font-medium mb-3">Best Difficulty</span>
-                                <div class="text-900 font-medium text-2xl">{{info.bestDiff}}
-                                    <span class="text-500 text-lg">all-time best</span>
-                                </div>
-                            </div>
-                        </div>
-                        <span class="text-900 font-medium">{{info.bestSessionDiff}} </span>
-                        <span class="text-500">since system boot</span>
-                        <!-- <span class="text-green-500 font-medium">520 </span>
-                        <span class="text-500">newly registered</span> -->
-                    </div>
+                <div class="mb-3" *ngIf="info.temp2 > 0">
+                    <h6 class="flex justify-content-between mb-1">
+                        ASIC Temperature 2
+                        <span>
+                            {{info.temp2}} &deg;C
+                        </span>
+                    </h6>
+                    <p-progressBar [value]="(info.temp2 / maxTemp) * 100" [styleClass]="'p-progressbar--thin'">
+                        <ng-template pTemplate="content" let-value></ng-template>
+                    </p-progressBar>
+
+                    <strong class="text-red-500" *ngIf="info.temp2 >= 70">
+                        Danger: High Temperature
+                    </strong>
                 </div>
 
-            </div>
-        </div>
-        <div class="col-12 mb-4" *ngIf="!info.power_fault">
-            <div class="card">
-                <p-chart [data]="chartData" [options]="chartOptions"></p-chart>
-            </div>
-        </div>
-        <div class="col-12 lg:col-6 xl:col-6">
-            <div class="card">
-               <h4 style="text-align: center;">Power</h4>
-                <div class="grid">
-                    <div class="col-12">
-                        <h6>Power <span style="float: right;">{{info.power}} W</span></h6>
-                        <p-progressBar [value]="(info.power / info.maxPower) * 100" [style]="{ height: '6px' }" >
-                            <ng-template pTemplate="content" let-value></ng-template>
-                        </p-progressBar>
-                    </div>
+                <div class="mb-3" *ngIf="info.vrTemp > 0">
+                    <h6 class="flex justify-content-between mb-1">
+                        Voltage Regulator Temperature<span>{{info.vrTemp}} &deg;C</span>
+                    </h6>
+                    <p-progressBar [value]="(info.vrTemp / 120) * 100" [styleClass]="'p-progressbar--thin'">
+                        <ng-template pTemplate="content" let-value></ng-template>
+                    </p-progressBar>
 
-                    <div class="col-12">
-
-                        <h6>Input Voltage <span style="float: right;">{{info.voltage}} V</span></h6>
-                        <div class="relative">
-                            <p-progressBar [value]="(info.voltage / (info.nominalVoltage + .5)) * 100" [style]="{ height: '6px' }">
-                                <ng-template pTemplate="content" let-value></ng-template>
-                            </p-progressBar>
-
-                            <!-- Conditional marker based on nominal voltage-->
-                            <div class="absolute bg-white"
-                                [style.left]="(info.nominalVoltage / (info.nominalVoltage + .5)) * 100 + '%'"
-                                style="top: 0; width: 3px; height: 6px;">
-                                <small class="absolute text-white" style="top: -1.25rem; transform: translateX(-50%)">{{info.nominalVoltage}}V</small>
-                            </div>
-                        </div>
-                        <span class="danger" *ngIf="info.voltage < (info.nominalVoltage + .5) * 0.87">&nbsp; Danger: Low voltage</span>
-                    </div>
-
-                    <div class="col-12">
-                        <!-- <p-knob [min]="100" [max]="maxFrequency" [readonly]="true" [(ngModel)]="info.frequency"
-                            valueTemplate="{value}"></p-knob>
-                        ASIC Frequency (MHz) -->
-
-                        <h6>ASIC Frequency <span style="float: right;">{{info.frequency}} MHz</span></h6>
-                        <p-progressBar [value]="(info.frequency / maxFrequency) * 100" [style]="{ height: '6px' }" >
-                            <ng-template pTemplate="content" let-value></ng-template>
-                        </p-progressBar>
-                    </div>
-                    <div class="col-12">
-                        <!-- <p-knob [min]="0.9" [max]="1.8" [readonly]="true" [(ngModel)]="info.coreVoltageActual"
-                            valueTemplate="{value}V"></p-knob>
-                        ASIC Voltage Measured -->
-                        <h6>Measured ASIC Voltage <span style="float: right;">{{info.coreVoltageActual}} V</span></h6>
-                        <p-progressBar [value]="(info.coreVoltageActual / 1.8) * 100" [style]="{ height: '6px' }" >
-                            <ng-template pTemplate="content" let-value></ng-template>
-                        </p-progressBar>
-                    </div>
-
+                    <strong class="text-red-500" *ngIf="info.vrTemp >= 105">
+                        Danger: High Temperature
+                    </strong>
                 </div>
-
             </div>
         </div>
 
-        <div class="col-12 lg:col-6 xl:col-6">
+        <div class="col-12 md:col-4">
             <div class="card">
-                <h4 style="text-align: center;">Heat</h4>
-                <div class="grid">
-                    <div class="col-12">
+                <h4 class="text-center">Fan</h4>
 
-                        <h6>ASIC Temperature
-                            <span style="float: right;">
-                                <ng-template #noTemp>--</ng-template>
-                                <ng-container *ngIf="info.temp > 0; else noTemp">
-                                    {{info.temp}}&deg;C
+                <div class="mb-3">
+                    <h6 class="flex justify-content-between mb-1">
+                        Fan Speed<span>{{info.fanspeed.toFixed(1)}} %</span>
+                    </h6>
+                    <p-progressBar [value]="info.fanspeed" [styleClass]="'p-progressbar--thin'">
+                        <ng-template pTemplate="content" let-value></ng-template>
+                    </p-progressBar>
+                </div>
+
+                <div class="mb-3">
+                    <h6 class="flex justify-content-between mb-1">
+                        <ng-container *ngIf="info.fan2rpm > 0; else singleFan">
+                            Fan 1 RPM
+                        </ng-container>
+                        <ng-template #singleFan>
+                            Fan RPM
+                        </ng-template>
+                        <span>
+                            <ng-container *ngIf="info.fanrpm > 0; else noValue">
+                                {{info.fanrpm}} RPM
+                            </ng-container>
+                        </span>
+                    </h6>
+                    <p-progressBar [value]="(info.fanrpm / maxRpm) * 100" [styleClass]="'p-progressbar--thin'">
+                        <ng-template pTemplate="content" let-value></ng-template>
+                    </p-progressBar>
+
+                </div>
+
+                <div *ngIf="info.fan2rpm > 0">
+                    <h6 class="flex justify-content-between mb-1">
+                        Fan 2 RPM
+                        <span>
+                            <ng-container *ngIf="info.fan2rpm > 0; else noValue">
+                                {{info.fan2rpm}} RPM
+                            </ng-container>
+                        </span>
+                    </h6>
+                    <p-progressBar [value]="(info.fan2rpm / maxRpm) * 100" [styleClass]="'p-progressbar--thin'">
+                        <ng-template pTemplate="content" let-value></ng-template>
+                    </p-progressBar>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 md:col-4">
+            <div class="card">
+                <div class="flex flex-nowrap justify-content-between mb-3 relative">
+                    <h4 class="mb-0">
+                        Pool
+                        <a
+                            *ngIf="(quickLink$ | async) as quickLink"
+                            [href]="quickLink"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="ml-1"
+                            [attr.aria-label]="'Open pool dashboard in new tab'"
+                            pTooltip="Open pool dashboard"
+                            tooltipPosition="top"
+                        >
+                            <i class="pi pi-external-link"></i>
+                        </a>
+                    </h4>
+                    <p-dropdown
+                        [options]="(pools$ | async) ?? []"
+                        [(ngModel)]="activePoolLabel"
+                        optionLabel="label"
+                        optionValue="value"
+                        (onChange)="onPoolChange($event)"
+                        styleClass="border-100 p-dropdown--small absolute right-0"
+                    />
+                </div>
+
+                <div class="flex flex-nowrap">
+                    <div class="col-fixed-width text-500">
+                        <tooltip-text-icon
+                            text="URL"
+                            tooltip="{{ getPoolProtocolType(info) }}"
+                        />
+                    </div>
+                    <div>
+                        <span>
+                            {{ activePoolURL }}:{{activePoolPort}}
+                        </span>
+                    </div>
+                </div>
+
+                <div class="flex flex-nowrap ellipsis-magic overflow-hidden">
+                    <div class="col-fixed-width text-500">
+                        <tooltip-text-icon
+                            text="User"
+                            tooltip="{{ activePoolUser }}"
+                        />
+                    </div>
+
+                    <span class="start" sensitive-data>
+                        {{ activePoolUser.substring(0, activePoolUser.length - 20) }}
+                    </span>
+                    <span class="end" sensitive-data>
+                        {{ activePoolUser.substring(activePoolUser.length - 20) }}
+                    </span>
+                </div>
+
+                <div class="flex flex-nowrap">
+                    <div class="col-fixed-width text-500">
+                        <tooltip-text-icon
+                            text="Time"
+                            tooltip="Time it takes for the pool to respond to a share"
+                        />
+                    </div>
+                    <div>
+                        {{ info.responseTime }} ms
+                    </div>
+                </div>
+
+                <div class="flex flex-nowrap">
+                    <div class="col-fixed-width text-500">
+                        <span>Difficulty</span>
+                    </div>
+                    <div>
+                        {{ info.poolDifficulty }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 md:col-4">
+            <div class="card">
+                <h4 class="white-space-nowrap overflow-hidden text-overflow-ellipsis">Block Header</h4>
+
+                <div class="flex flex-nowrap">
+                    <div class="col-fixed-width text-500">
+                        <span>Height</span>
+                    </div>
+                    <div>
+                        {{ info.blockHeight }}
+                    </div>
+                </div>
+
+                <div class="flex flex-nowrap">
+                    <div class="col-fixed-width text-500">
+                        <span>Difficulty</span>
+                    </div>
+                    <div *ngIf="info.networkDifficulty">
+                        {{ info.networkDifficulty | diffSuffix }}
+                    </div>
+                </div>
+
+                <div class="flex flex-nowrap align-items-baseline">
+                    <div class="col-fixed-width text-500">
+                        <span>Scriptsig</span>
+                    </div>
+                    <div class="code">
+                        {{ info.scriptsig }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 md:col-4">
+            <div class="card">
+                <h4 class="white-space-nowrap overflow-hidden text-overflow-ellipsis">Hashrate Registers</h4>
+
+                <ng-container *ngIf="getAsicsAmount(info) as asicAmount">
+                    <table class="heatmap text-{{asicAmount <= 2 ? 'sm' : 'xs'}}">
+                        <thead>
+                            <tr>
+                                <th *ngIf="asicAmount > 1" class="text-left">ASIC</th>
+                                <ng-container *ngIf="getAsicDomainsAmount(info) as asicDomainsAmount">
+                                    <th *ngIf="asicDomainsAmount > 0" [attr.colspan]="asicDomainsAmount">
+                                        {{ asicDomainsAmount == 1 ? "Domain" : "Domains" }}
+                                    </th>
                                 </ng-container>
-                            </span>
-                        </h6>
-                        <p-progressBar [value]="(info.temp / maxTemp) * 100" [style]="{ height: '6px' }" >
-                            <ng-template pTemplate="content" let-value></ng-template>
-                        </p-progressBar>
-
-                        <span class="danger" *ngIf="info.temp >= 70">&nbsp;
-                            Danger:
-                            High Temperature</span>
-                    </div>
-                    <div class="col-12" *ngIf="info.vrTemp > 0">
-
-                        <h6>Voltage Regulator Temperature <span style="float: right;">{{info.vrTemp}}&deg;C</span></h6>
-                        <p-progressBar [value]="(info.vrTemp / 120) * 100" [style]="{ height: '6px' }" >
-                            <ng-template pTemplate="content" let-value></ng-template>
-                        </p-progressBar>
-
-                        <span class="danger" *ngIf="info.vrTemp >= 105">&nbsp;
-                            Danger:
-                            High Temperature</span>
-                    </div>
-                    <div class="col-12">
-                        <h6>Fan Speed<span style="float: right;">{{info.fanspeed}}%  ({{info.fanrpm}} RPM)</span></h6>
-                        <p-progressBar [value]="info.fanspeed" [style]="{ height: '6px' }" >
-                            <ng-template pTemplate="content" let-value></ng-template>
-                        </p-progressBar>
-                    </div>
-                    <div class="col-12">
-                        <h6>Beneath Fan Speed<span style="float: right;">{{info.beneathfanspeed}}%</span></h6>
-                        <p-progressBar [value]="info.beneathfanspeed" [style]="{ height: '6px' }" >
-                            <ng-template pTemplate="content" let-value></ng-template>
-                        </p-progressBar>
-                    </div>
-                </div>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="cursor-pointer" *ngFor="let asic of info.hashrateMonitor.asics; let i = index"
+                                    [pTooltip]="(asicAmount > 1 ? 'ASIC ' + (i + 1) + ' - ' : '') + 'Error count: ' + asic.errorCount"
+                                    tooltipPosition="bottom">
+                                <td *ngIf="asicAmount > 1" class="text-500 text-left">
+                                    {{ i + 1 }}
+                                </td>
+                                <td *ngFor="let domain of asic.domains"
+                                    [style.background]="getHeatmapColor(info, normalizeHashrate(domain))"
+                                    [style.height]="(asicAmount <= 2 ? '2rem' : null)"
+                                    class="text-center">
+                                    <span class="text-xs">{{ normalizeHashrate(domain) | hashSuffix }}</span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </ng-container>
             </div>
         </div>
-
-
-
-
-        <div class="col-12 lg:col-6">
-            <div class="card" *ngIf="info$ | async as info; else loading">
-                <h5>Pool Information ({{info.isUsingFallbackStratum ? 'Fallback' : 'Primary' }})</h5>
-                <table>
-                    <ng-container *ngIf="!info.isUsingFallbackStratum">
-                        <tr>
-                            <td>URL:</td>
-                            <td style="word-break: break-all;">
-                                <a style="text-decoration: underline;" [href]="(quickLink$ | async)"
-                                    target="_blank">{{info.stratumURL}}</a>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>Port:</td>
-                            <td style="word-break: break-all;">{{info.stratumPort}}</td>
-                        </tr>
-                        <tr>
-                            <td>User:</td>
-                            <td style="word-break: break-all;">{{info.stratumUser}}</td>
-                        </tr>
-                    </ng-container>
-                    <ng-container *ngIf="info.isUsingFallbackStratum">
-                        <tr>
-                            <td>URL:</td>
-                            <td style="word-break: break-all;">
-                                <a style="text-decoration: underline;"
-                                    [href]="(fallbackQuickLink$ | async) || info.fallbackStratumURL"
-                                    target="_blank">{{info.fallbackStratumURL}}</a>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>Port:</td>
-                            <td style="word-break: break-all;">{{info.fallbackStratumPort}}</td>
-                        </tr>
-                        <tr>
-                            <td>User:</td>
-                            <td style="word-break: break-all;">{{info.fallbackStratumUser}}</td>
-                        </tr>
-                    </ng-container>
-                </table>
-            </div>
-        </div>
-
-        <div class="col-12 lg:col-6">
-            <div class="card" *ngIf="info$ | async as info; else loading">
-                <h5>Uptime</h5>
-                {{info.uptimeSeconds | dateAgo}}
-                <h5>Chip Submit:</h5>
-                {{info.chipSubmitStr}}
-            </div>
-        </div>
-
     </div>
 
-
+    <app-confetti *ngIf="info.blockFound"></app-confetti>
 </ng-container>

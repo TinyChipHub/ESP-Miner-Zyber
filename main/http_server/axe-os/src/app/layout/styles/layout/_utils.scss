@@ -1,14 +1,22 @@
 .card {
     background: var(--surface-card);
     border: 1px solid var(--surface-border);
-    padding: 2rem;
-    margin-bottom: 2rem;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
     box-shadow: var(--card-shadow);
     border-radius: $borderRadius;
+
+    @media (min-width: 768px) {
+        padding: 2rem;
+    }
 
     &:last-child {
         margin-bottom: 0;
     }
+}
+
+.field-checkbox > label {
+    line-height: unset;
 }
 
 .p-toast {
@@ -16,5 +24,37 @@
     &.p-toast-top-left,
     &.p-toast-top-center {
         top: 100px;
+    }
+}
+
+.p-tooltip-text {
+    font-size: 0.9rem;
+}
+
+.field.grid > label {
+    @media (min-width: 768px) {
+        align-items: baseline;
+        flex-direction: column;
+        justify-content: center;
+    }
+}
+
+.sensitive-data-hidden {
+    [sensitive-data] {
+        font-size: 0;
+        pointer-events: none;
+
+        &::before,
+        &.p-inputtext {
+            font-size: $scale;
+        }
+
+        &.p-inputtext {
+            -webkit-text-security: disc;
+        }
+
+        &::before {
+            content: '••••••';
+        }
     }
 }
