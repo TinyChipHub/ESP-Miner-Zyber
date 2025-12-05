@@ -507,7 +507,7 @@ void display_short_press(void){
         gpio_set_level(DISPLAY_PIN_BK_PWR, DISPLAY_LCD_BK_LIGHT_ON);
         //lvgl_port_resume();
         display_off=false;
-        screen_next();
+        //screen_next();
         lvgl_port_unlock();
     }
 }

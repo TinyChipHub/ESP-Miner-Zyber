@@ -1,5 +1,5 @@
 import { Component, ViewChild } from '@angular/core';
-import { Observable, switchMap, shareReplay, map, timer, distinctUntilChanged } from 'rxjs';
+import { Observable, switchMap, shareReplay, map, timer, distinctUntilChanged, repeat } from 'rxjs';
 import { HttpErrorResponse, HttpEventType } from '@angular/common/http';
 import { ToastrService } from 'ngx-toastr';
 import { FileUploadHandlerEvent, FileUpload } from 'primeng/fileupload';
@@ -25,6 +25,7 @@ export class UpdateComponent {
   public latestRelease$: Observable<any>;
 
   public info$: Observable<any>;
+  public boardVersion: string = 'unknown';
 
   @ViewChild('firmwareUpload') firmwareUpload!: FileUpload;
   @ViewChild('websiteUpload') websiteUpload!: FileUpload;
@@ -47,14 +48,24 @@ export class UpdateComponent {
       distinctUntilChanged((prev, curr) => JSON.stringify(prev) === JSON.stringify(curr)),
       shareReplay({ refCount: true, bufferSize: 1 })
     );
+
+    this.info$.subscribe(info => {
+      this.boardVersion = info.boardVersion;
+    });
+
+
   }
 
   otaUpdate(event: FileUploadHandlerEvent) {
     const file = event.files[0];
     this.firmwareUpload.clear(); // clear the file upload component
 
-    if (file.name != 'esp-miner.bin') {
-      this.toastrService.error('Incorrect file, looking for esp-miner.bin.');
+    if ((this.boardVersion === '1100'||this.boardVersion === '1110') && file.name !== 'esp-miner-zyber8g.bin') {
+        this.toastrService.error('Incorrect file, looking for esp-miner-zyber8g.bin.', 'Error');
+        return;
+    }
+    if(this.boardVersion === '1000' && file.name !== 'esp-miner-zyber8s.bin') {
+      this.toastrService.error('Incorrect file, looking for esp-miner-zyber8s.bin.', 'Error');
       return;
     }
 
