@@ -494,7 +494,19 @@ static void screen_update_cb(lv_timer_t * timer)
 
 void screen_next()
 {
-    if (current_screen >= SCR_CAROUSEL_START) {
+    if(display_off){
+        //lvgl_port_resume();
+        if(lvgl_port_lock(0)){
+            ESP_LOGI(TAG,"display switch on");
+            gpio_set_level(DISPLAY_PIN_PWR, true);
+            gpio_set_level(DISPLAY_PIN_BK_PWR, DISPLAY_LCD_BK_LIGHT_ON);
+            //lvgl_port_resume();
+            display_off=false;
+            //screen_next();
+            lvgl_port_unlock();
+        }
+    }
+    else if (current_screen >= SCR_CAROUSEL_START) {
         screen_show(current_screen == SCR_CAROUSEL_END ? SCR_CAROUSEL_START : current_screen + 1);
     }
 }
