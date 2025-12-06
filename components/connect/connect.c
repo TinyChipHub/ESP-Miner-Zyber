@@ -299,7 +299,7 @@ esp_netif_t * wifi_init_softap(char * ap_ssid)
     uint8_t mac[6];
     esp_wifi_get_mac(ESP_IF_WIFI_AP, mac);
     // Format the last 4 bytes of the MAC address as a hexadecimal string
-    snprintf(ap_ssid, 32, "Zyber[%02X%02X]", mac[4], mac[5]);
+    snprintf(ap_ssid, 32, "Zyber(%02X%02X)", mac[4], mac[5]);
 
     wifi_config_t wifi_ap_config;
     memset(&wifi_ap_config, 0, sizeof(wifi_ap_config));
