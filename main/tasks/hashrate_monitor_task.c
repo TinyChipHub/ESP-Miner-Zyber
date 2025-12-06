@@ -10,6 +10,7 @@
 #include "asic_init.h"
 #include "driver/uart.h"
 #include "vcore.h"
+#include "nvs_config.h"
 
 #define EPSILON 0.0001f
 
@@ -105,7 +106,8 @@ void check_hashrate_anomaly(void  *pvParameters, float current_hashrate)
         vTaskDelay(100 / portTICK_PERIOD_MS);
         //clear_measurements(GLOBAL_STATE);
         
-        ESP_RETURN_ON_ERROR(VCORE_set_voltage(GLOBAL_STATE, nvs_config_get_u16(NVS_CONFIG_ASIC_VOLTAGE) / 1000.0), TAG, "VCORE set voltage failed!");
+        //ESP_RETURN_ON_ERROR(TPS546_set_vout(core_voltage * voltage_domains), TAG, "TPS546 set voltage failed!");
+        VCORE_set_voltage(GLOBAL_STATE, nvs_config_get_u16(NVS_CONFIG_ASIC_VOLTAGE) / 1000.0);
 
         // Perform live recovery
         // Stabilization delay of 2000ms prevents race conditions where tasks are just
