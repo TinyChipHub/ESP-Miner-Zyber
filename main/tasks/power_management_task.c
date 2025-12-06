@@ -110,7 +110,9 @@ void POWER_MANAGEMENT_task(void * pvParameters)
         power_management->voltage = Power_get_input_voltage(GLOBAL_STATE);
         power_management->outVoltage_mv = Power_get_output_voltage(GLOBAL_STATE);
         power_management->current = Power_get_current(GLOBAL_STATE);
-        power_management->power = Power_get_power(GLOBAL_STATE);
+        power_management->power = power_management->outVoltage_mv * power_management->current / 1000.0 + GLOBAL_STATE->DEVICE_CONFIG.family.power_offset ; // in milliwatts
+
+        vTaskDelay(100 / portTICK_PERIOD_MS); // Wait 100 seconds
 
         power_management->fan_rpm = Thermal_get_fan_speed(&GLOBAL_STATE->DEVICE_CONFIG);
         power_management->fan2_rpm = Thermal_get_fan2_speed(&GLOBAL_STATE->DEVICE_CONFIG);

@@ -9,6 +9,7 @@
 #include "utils.h"
 #include "asic_init.h"
 #include "driver/uart.h"
+#include "vcore.h"
 
 #define EPSILON 0.0001f
 
@@ -18,9 +19,10 @@
 
 static const char *TAG = "hashrate_monitor";
 static float highest_hashrate = 0.0f;
-static uint8_t lowHashrateCount = 0;
+static uint8_t hashrateErrorCount = 0;
 static int reinitiateCount = 0;
-static float thresholdHashratePercent = 0.82f; // 60% of expected hashrate
+static float lowerThresholdHashratePercent = 0.82f; // 82% of expected hashrate
+static float upperThresholdHashratePercent = 1.50f; // 150% of expected hashrate
 
 static float sum_hashrates(measurement_t * measurement, int asic_count)
 {
@@ -78,15 +80,17 @@ void check_hashrate_anomaly(void  *pvParameters, float current_hashrate)
 
     float expected_hashrate = GLOBAL_STATE->POWER_MANAGEMENT_MODULE.expected_hashrate;
 
-    if (current_hashrate<highest_hashrate && current_hashrate < expected_hashrate * thresholdHashratePercent) {
-        lowHashrateCount++;
-        ESP_LOGW(TAG, "Low hashrate detected: %.3f Gh/s (expected: %.3f Gh/s). Count: %d", current_hashrate, expected_hashrate, lowHashrateCount);
+    if (current_hashrate<highest_hashrate && (current_hashrate < expected_hashrate * lowerThresholdHashratePercent
+        ||current_hashrate > expected_hashrate * upperThresholdHashratePercent)) 
+    {
+        hashrateErrorCount++;
+        ESP_LOGW(TAG, "Hashrate Abnomal Detected: %.3f Gh/s (expected: %.3f Gh/s). Count: %d", current_hashrate, expected_hashrate, hashrateErrorCount);
     } else {
-        lowHashrateCount = 0; // Reset counter if hashrate is normal
+        hashrateErrorCount = 0; // Reset counter if hashrate is normal
         return;
     }
 
-    if (lowHashrateCount >= 3) { // If low hashrate detected 3 times consecutively
+    if (hashrateErrorCount >= 2) { // If low hashrate detected 2 times consecutively
         reinitiateCount++;
         ESP_LOGW(TAG, "Reinitiating ASICs due to sustained low hashrate. Reinitiate count: %d", reinitiateCount);
         
@@ -101,6 +105,8 @@ void check_hashrate_anomaly(void  *pvParameters, float current_hashrate)
         vTaskDelay(100 / portTICK_PERIOD_MS);
         //clear_measurements(GLOBAL_STATE);
         
+        ESP_RETURN_ON_ERROR(VCORE_set_voltage(GLOBAL_STATE, nvs_config_get_u16(NVS_CONFIG_ASIC_VOLTAGE) / 1000.0), TAG, "VCORE set voltage failed!");
+
         // Perform live recovery
         // Stabilization delay of 2000ms prevents race conditions where tasks are just
         // starting to use ASIC while power management loop tries to change frequency
@@ -110,7 +116,7 @@ void check_hashrate_anomaly(void  *pvParameters, float current_hashrate)
             ESP_LOGI(TAG, "Resuming normal operation.");
         }
         
-        lowHashrateCount = 0; // Reset counter after reinitialization
+        hashrateErrorCount = 0; // Reset counter after reinitialization
     }
 
 }
