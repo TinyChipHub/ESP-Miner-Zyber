@@ -104,7 +104,7 @@ static const FamilyConfig default_families[] = {
 static const DeviceConfig default_configs[] = {
     { .board_version = "1000",  .family = FAMILY_ZYBER8S,    .EMC2302 = true, .TMP1075 = true,                                            .temp_offset = 2,  .TPS546 = true,                                                           .power_consumption_target = 110, },
     { .board_version = "1100",  .family = FAMILY_ZYBER8G,    .EMC2302 = true, .TMP1075 = true,                                            .temp_offset = 2,  .TPS546 = true,                                                           .power_consumption_target = 135, },
-    { .board_version = "1110",  .family = FAMILY_ZYBER8G,    .EMC2101 = true, .EMC2302 = true, .emc_ideality_factor = 0x24, .emc_beta_compensation = 0x00, .TMP1075 = true, .has_three_fan=true,      .temp_offset = 2,  .TPS546 = true,            .emc_internal_temp=false,                      .power_consumption_target = 135, },
+    { .board_version = "1110",  .family = FAMILY_ZYBER8G,    .EMC2101 = true, .EMC2302 = true, .emc_ideality_factor = 0x32, .emc_beta_compensation = 0x00, .TMP1075 = true, .has_three_fan=true,      .temp_offset = 2,  .TPS546 = true,            .emc_internal_temp=false,                      .power_consumption_target = 135, },
 };
 
 esp_err_t device_config_init(void * pvParameters);
