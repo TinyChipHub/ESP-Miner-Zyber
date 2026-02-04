@@ -36,6 +36,7 @@ typedef enum
 {
     ZYBER8S,
     ZYBER8G,
+    ZYBER8GPLUS,
 } Family;
 
 typedef struct {
@@ -93,18 +94,21 @@ static const AsicConfig default_asic_configs[] = {
     ASIC_BM1370,
 };
 
-static const FamilyConfig FAMILY_ZYBER8S    = { .id = ZYBER8S,    .name = "Zyber8S",   .asic = ASIC_BM1368, .asic_count = 8, .max_power = 160, .power_offset = 12,  .nominal_voltage = 12,  .voltage_domains = 4, .swarm_color = "blue",};
-static const FamilyConfig FAMILY_ZYBER8G    = { .id = ZYBER8G,    .name = "Zyber8G",   .asic = ASIC_BM1370, .asic_count = 8, .max_power = 220, .power_offset = 12,  .nominal_voltage = 12,  .voltage_domains = 4, .swarm_color = "purple",};
+static const FamilyConfig FAMILY_ZYBER8S    = { .id = ZYBER8S,    .name = "Zyber8S",   .asic = ASIC_BM1368, .asic_count = 8, .max_power = 160, .power_offset = 8,  .nominal_voltage = 12,  .voltage_domains = 4, .swarm_color = "blue",};
+static const FamilyConfig FAMILY_ZYBER8G    = { .id = ZYBER8G,    .name = "Zyber8G",   .asic = ASIC_BM1370, .asic_count = 8, .max_power = 220, .power_offset = 8,  .nominal_voltage = 12,  .voltage_domains = 4, .swarm_color = "purple",};
+static const FamilyConfig FAMILY_ZYBER8GPLUS    = { .id = ZYBER8GPLUS,    .name = "Zyber8GPlus",   .asic = ASIC_BM1370, .asic_count = 12, .max_power = 255, .power_offset = 10,  .nominal_voltage = 12,  .voltage_domains = 4, .swarm_color = "cherry",};
 
 static const FamilyConfig default_families[] = {
     FAMILY_ZYBER8S,
     FAMILY_ZYBER8G,
+    FAMILY_ZYBER8GPLUS,
 };
 
 static const DeviceConfig default_configs[] = {
-    { .board_version = "1000",  .family = FAMILY_ZYBER8S,    .EMC2302 = true, .TMP1075 = true,                                            .temp_offset = 2,  .TPS546 = true,                                                           .power_consumption_target = 110, },
-    { .board_version = "1100",  .family = FAMILY_ZYBER8G,    .EMC2302 = true, .TMP1075 = true,                                            .temp_offset = 2,  .TPS546 = true,                                                           .power_consumption_target = 135, },
-    { .board_version = "1110",  .family = FAMILY_ZYBER8G,    .EMC2101 = true, .EMC2302 = true, .emc_ideality_factor = 0x32, .emc_beta_compensation = 0x00, .TMP1075 = true, .has_three_fan=true,      .temp_offset = 2,  .TPS546 = true,            .emc_internal_temp=false,                      .power_consumption_target = 135, },
+    { .board_version = "1000",  .family = FAMILY_ZYBER8S,     .EMC2302 = true, .TMP1075 = true,                                            .temp_offset = 2,  .TPS546 = true,                                                           .power_consumption_target = 110, },
+    { .board_version = "1100",  .family = FAMILY_ZYBER8G,     .EMC2302 = true, .TMP1075 = true,                                            .temp_offset = 2,  .TPS546 = true,                                                           .power_consumption_target = 135, },
+    { .board_version = "1110",  .family = FAMILY_ZYBER8G,     .EMC2101 = true, .EMC2302 = true, .emc_ideality_factor = 0x32, .emc_beta_compensation = 0x00, .TMP1075 = true, .has_three_fan=true,      .temp_offset = 2,  .TPS546 = true,  .emc_internal_temp=false,   .power_consumption_target = 165, },
+    { .board_version = "1200",  .family = FAMILY_ZYBER8GPLUS, .EMC2101 = true, .EMC2302 = true, .emc_ideality_factor = 0x32, .emc_beta_compensation = 0x00, .TMP1075 = true, .has_three_fan=true,      .temp_offset = 2,  .TPS546 = true,  .emc_internal_temp=true,   .power_consumption_target = 235, },
 };
 
 esp_err_t device_config_init(void * pvParameters);

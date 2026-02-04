@@ -344,7 +344,8 @@ export class SwarmComponent implements OnInit, OnDestroy {
       if (data.boardVersion[0] == "6") return "Gamma";
       if (data.boardVersion[0] == "8") return "GammaTurbo";
       if (data.boardVersion == "1000") return "Zyber8S";
-      if (data.boardVersion == "1100") return "Zyber8G";
+      if (data.boardVersion == "1100"||data.boardVersion == "1110") return "Zyber8G";
+      if (data.boardVersion == "1200") return "Zyber8GPlus";
     }
     return 'Other';
   }
@@ -360,6 +361,7 @@ export class SwarmComponent implements OnInit, OnDestroy {
       case 'GammaTurbo': return 'cyan';
       case 'Zyber8S':   return 'purple';
       case 'Zyber8G':   return 'purple';
+      case 'Zyber8GPlus':   return 'cherry';
       default:           return 'gray';
     }
   }

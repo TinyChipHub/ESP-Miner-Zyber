@@ -68,6 +68,10 @@ export class UpdateComponent {
       this.toastrService.error('Incorrect file, looking for esp-miner-zyber8s.bin.', 'Error');
       return;
     }
+    if(this.boardVersion === '1200' && file.name !== 'esp-miner-zyber8gplus.bin') {
+      this.toastrService.error('Incorrect file, looking for esp-miner-zyber8gplus.bin.', 'Error');
+      return;
+    }
 
     this.systemService.performOTAUpdate(file)
       .pipe(this.loadingService.lockUIUntilComplete())

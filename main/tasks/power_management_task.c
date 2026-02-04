@@ -110,6 +110,8 @@ void POWER_MANAGEMENT_task(void * pvParameters)
         power_management->voltage = Power_get_input_voltage(GLOBAL_STATE);
         power_management->outVoltage_mv = Power_get_output_voltage(GLOBAL_STATE);
         power_management->current = Power_get_current(GLOBAL_STATE);
+        ESP_LOGW(TAG, "Current: %.3f", power_management->current);
+        ESP_LOGW(TAG, "Voltage: %.3f", power_management->outVoltage_mv);
         power_management->power = power_management->outVoltage_mv * power_management->current / 1000.0 + GLOBAL_STATE->DEVICE_CONFIG.family.power_offset ; // in milliwatts
 
         vTaskDelay(100 / portTICK_PERIOD_MS); // Wait 100 seconds

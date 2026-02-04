@@ -708,6 +708,30 @@ float TPS546_get_iout(void)
     float iout;
 
     //set the phase register to 0xFF to read all phases
+    smb_write_byte(PMBUS_PHASE, 0x00);
+
+    /* Get current output (SLINEAR11) */
+    if (smb_read_word(PMBUS_READ_IOUT, &u16_value) != ESP_OK) {
+        ESP_LOGE(TAG, "Could not read Iout");
+        return 0;
+    } else {
+        iout = slinear11_2_float(u16_value);
+        ESP_LOGI(TAG, "Got Iout 0x00: %2.3f A", iout);
+    }
+
+    //set the phase register to 0xFF to read all phases
+    smb_write_byte(PMBUS_PHASE, 0x01);
+
+    /* Get current output (SLINEAR11) */
+    if (smb_read_word(PMBUS_READ_IOUT, &u16_value) != ESP_OK) {
+        ESP_LOGE(TAG, "Could not read Iout");
+        return 0;
+    } else {
+        iout = slinear11_2_float(u16_value);
+        ESP_LOGI(TAG, "Got Iout 0x01: %2.3f A", iout);
+    }
+
+    //set the phase register to 0xFF to read all phases
     smb_write_byte(PMBUS_PHASE, 0xFF);
 
     /* Get current output (SLINEAR11) */

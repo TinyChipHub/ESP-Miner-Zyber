@@ -23,7 +23,8 @@
 
 #define TPS546_INIT_PHASE 0xFF  /* default phase register value from TPS546 datasheet */
 
-#define TPS546_INIT_FREQUENCY 650  /* KHz */
+#define TPS546_INIT_FREQUENCY 650
+  /* KHz */
 
 typedef struct
 {
@@ -62,7 +63,7 @@ typedef struct
 #define TPS546_INIT_VOUT_OV_WARN_LIMIT  1.16 /* %/100 above VOUT_COMMAND */
 #define TPS546_INIT_VOUT_MARGIN_HIGH 1.1 /* %/100 above VOUT */
 //#define TPS546_INIT_VOUT_COMMAND 1.2  /* V absolute value */
-#define TPS546_INIT_VOUT_MARGIN_LOW 0.90 /* %/100 below VOUT */
+#define TPS546_INIT_VOUT_MARGIN_LOW 0.9 /* %/100 below VOUT */
 #define TPS546_INIT_VOUT_UV_WARN_LIMIT 0.90  /* %/100 below VOUT_COMMAND */
 #define TPS546_INIT_VOUT_UV_FAULT_LIMIT 0.75 /* %/100 below VOUT_COMMAND */
 //#define TPS546_INIT_VOUT_MIN 1 /* v */
@@ -76,7 +77,7 @@ typedef struct
 //11 -> Shutdown Immediately
 //000 -> Do not attempt to restart (latch off).
 //000 -> Shutdown delay of one PWM_CLK, HICCUP equal to TON_RISE
-#define TPS546_INIT_IOUT_OC_FAULT_RESPONSE 0xC0  /* shut down, no retries */
+#define TPS546_INIT_IOUT_OC_FAULT_RESPONSE 0x1B//0xC0  /* shut down, no retries */
 
   /* temperature */
 // It is better to set the temperature warn limit for TPS546 more higher than Ultra 
