@@ -81,5 +81,6 @@
     "--background-index",
     "--query-driver=G:\\esp-tool\\tools\\xtensa-esp-elf\\esp-14.2.0_20241119\\xtensa-esp-elf\\bin\\xtensa-esp32s3-elf-gcc.exe",
     "--compile-commands-dir=e:\\PCBs\\ESP-Miner-TCH\\build"
-  ]
+  ],
+  "idf.currentSetup": "d:\\esp\\v5.4\\esp-idf"
 }

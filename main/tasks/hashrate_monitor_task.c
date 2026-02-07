@@ -19,11 +19,16 @@
 #define HASHRATE_UNIT 0x100000uLL // Hashrate register unit (2^24 hashes)
 
 static const char *TAG = "hashrate_monitor";
-static float highest_hashrate = 0.0f;
 static uint8_t hashrateErrorCount = 0;
 static int reinitiateCount = 0;
 static float lowerThresholdHashratePercent = 0.82f; // 82% of expected hashrate
 static float upperThresholdHashratePercent = 1.50f; // 150% of expected hashrate
+
+static bool is_reinitialize=false;
+static bool is_just_reinitialized=false;
+static float expected_chip_hashrate;
+static float expected_total_hashrate;
+static float expected_domain_hashrate;
 
 static float sum_hashrates(measurement_t * measurement, int asic_count)
 {
@@ -74,29 +79,19 @@ static void update_hash_counter(uint32_t time_ms, uint32_t value, measurement_t 
     measurement->time_ms = time_ms;
 }
 
-void check_hashrate_anomaly(void  *pvParameters, float current_hashrate)
+void report_anomaly(void *pvParameters)
 {
+    if(is_reinitialize) return;
+    if(is_just_reinitialized) return;
+
     GlobalState * GLOBAL_STATE = (GlobalState *)pvParameters;
-    HashrateMonitorModule * HASHRATE_MONITOR_MODULE = &GLOBAL_STATE->HASHRATE_MONITOR_MODULE;
-
-    float expected_hashrate = GLOBAL_STATE->POWER_MANAGEMENT_MODULE.expected_hashrate;
-
-    if (current_hashrate<highest_hashrate && (current_hashrate < expected_hashrate * lowerThresholdHashratePercent
-        ||current_hashrate > expected_hashrate * upperThresholdHashratePercent)) 
-    {
-        hashrateErrorCount++;
-        ESP_LOGW(TAG, "Hashrate Abnomal Detected: %.3f Gh/s (expected: %.3f Gh/s). Count: %d", current_hashrate, expected_hashrate, hashrateErrorCount);
-    } else {
-        hashrateErrorCount = 0; // Reset counter if hashrate is normal
-        return;
-    }
+    
+    hashrateErrorCount++;
 
     if (hashrateErrorCount >= 2) { // If low hashrate detected 2 times consecutively
+        is_reinitialize = true;
         reinitiateCount++;
-        ESP_LOGW(TAG, "Reinitiating ASICs due to sustained low hashrate. Reinitiate count: %d", reinitiateCount);
-        
-        ESP_LOGI(TAG, "Stopping ASIC tasks...");
-        // Mark ASIC as uninitialized to stop any tasks from trying to use UART
+
         GLOBAL_STATE->ASIC_initalized = false;
         // Give tasks time to complete any current UART operation and notice the flag
         vTaskDelay(500 / portTICK_PERIOD_MS);
@@ -114,11 +109,12 @@ void check_hashrate_anomaly(void  *pvParameters, float current_hashrate)
         // starting to use ASIC while power management loop tries to change frequency
         uint8_t chip_count = asic_initialize(GLOBAL_STATE, ASIC_INIT_RECOVERY, 2000);
         
-        if (chip_count > 0) {
-            ESP_LOGI(TAG, "Resuming normal operation.");
-        }
-        
+        is_reinitialize = false;
+        is_just_reinitialized = true;
         hashrateErrorCount = 0; // Reset counter after reinitialization
+        if(reinitiateCount%10==0){
+            ESP_LOGI(TAG, "Hashrate anomaly detected and recovery performed %d times", reinitiateCount);
+        }
     }
 
 }
@@ -132,7 +128,12 @@ void hashrate_monitor_task(void *pvParameters)
     int asic_count = GLOBAL_STATE->DEVICE_CONFIG.family.asic_count;
     int hash_domains = GLOBAL_STATE->DEVICE_CONFIG.family.asic.hash_domains;
 
-    float expected_hashrate = GLOBAL_STATE->POWER_MANAGEMENT_MODULE.expected_hashrate;
+    expected_total_hashrate = GLOBAL_STATE->POWER_MANAGEMENT_MODULE.expected_hashrate;
+    expected_chip_hashrate = expected_total_hashrate / (float)asic_count;
+    expected_domain_hashrate = expected_hashrate;
+    if(hash_domains>0){
+        expected_domain_hashrate = expected_hashrate/(float)asic_count/(float)/hash_domains;
+    }
 
     lowerThresholdHashratePercent = 1.0f-((expected_hashrate/asic_count/hash_domains*2.0f)/expected_hashrate);
 
@@ -154,20 +155,25 @@ void hashrate_monitor_task(void *pvParameters)
 
     TickType_t taskWakeTime = xTaskGetTickCount();
     while (1) {
+        if(is_reinitialize){
+            vTaskDelay(200 / portTICK_PERIOD_MS);
+            continue;
+        }
+        if(is_just_reinitialized){
+            is_just_reinitialized = false;
+            vTaskDelay(POLL_RATE / portTICK_PERIOD_MS);
+            continue;
+        }
         ASIC_read_registers(GLOBAL_STATE);
 
         vTaskDelay(100 / portTICK_PERIOD_MS);
 
         float current_hashrate = sum_hashrates(HASHRATE_MONITOR_MODULE->total_measurement, asic_count);
-        if(current_hashrate > highest_hashrate) {
-            highest_hashrate = current_hashrate;
-            ESP_LOGI(TAG, "New Highest Hashrate: %.3f Gh/s", highest_hashrate);
-        }
         float error_hashrate = sum_hashrates(HASHRATE_MONITOR_MODULE->error_measurement, asic_count);
 
         SYSTEM_MODULE->current_hashrate = current_hashrate;
-        SYSTEM_MODULE->error_percentage = current_hashrate > 0 ? error_hashrate / current_hashrate * 100.f : 0;
-        check_hashrate_anomaly(pvParameters, current_hashrate);
+        // SYSTEM_MODULE->error_percentage = current_hashrate > 0 ? error_hashrate / current_hashrate * 100.f : 0;
+
         vTaskDelayUntil(&taskWakeTime, POLL_RATE / portTICK_PERIOD_MS);
     }
 }
