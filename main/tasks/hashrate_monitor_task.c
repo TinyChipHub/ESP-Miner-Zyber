@@ -21,8 +21,8 @@
 static const char *TAG = "hashrate_monitor";
 static uint8_t hashrateErrorCount = 0;
 static int reinitiateCount = 0;
-static float lowerThresholdHashratePercent = 0.82f; // 82% of expected hashrate
-static float upperThresholdHashratePercent = 1.50f; // 150% of expected hashrate
+static float lowerThresholdHashratePercent = 0.18f; // 82% of expected hashrate
+
 
 static bool is_reinitialize=false;
 static bool is_just_reinitialized=false;
@@ -62,6 +62,7 @@ static void update_hashrate(uint32_t value, measurement_t * measurement, int asi
 
     if (hashrate_value != 0x007FFFFF && !flag_long) {
         float hashrate = hashrate_value * (float)HASHRATE_UNIT; // Make sure it stays in float
+        float diff = fabsf(hashrate - expected_chip_hashrate)/expected_chip_hashrate;
         measurement[asic_nr].hashrate =  hashrate / 1e9f; // Convert to Gh/s
     }
 }
@@ -79,16 +80,21 @@ static void update_hash_counter(uint32_t time_ms, uint32_t value, measurement_t 
     measurement->time_ms = time_ms;
 }
 
-void report_anomaly(void *pvParameters)
+bool check_anomaly(void *pvParameters, float hashrate, float expected)
 {
-    if(is_reinitialize) return;
-    if(is_just_reinitialized) return;
+    if(is_reinitialize) return false;
+    if(is_just_reinitialized) return false;
 
     GlobalState * GLOBAL_STATE = (GlobalState *)pvParameters;
-    
-    hashrateErrorCount++;
 
-    if (hashrateErrorCount >= 2) { // If low hashrate detected 2 times consecutively
+    float diffPercent = fabs(expected - hashrate) / expected;
+    if(hashrate==0 || diffPercent > lowerThresholdHashratePercent){
+        hashrateErrorCount++;
+    }else{
+        return true;
+    }
+
+    if (hashrateErrorCount >= 5) { // If low hashrate detected 5 times consecutively
         is_reinitialize = true;
         reinitiateCount++;
 
@@ -128,12 +134,7 @@ void hashrate_monitor_task(void *pvParameters)
     int asic_count = GLOBAL_STATE->DEVICE_CONFIG.family.asic_count;
     int hash_domains = GLOBAL_STATE->DEVICE_CONFIG.family.asic.hash_domains;
 
-    expected_total_hashrate = GLOBAL_STATE->POWER_MANAGEMENT_MODULE.expected_hashrate;
-    expected_chip_hashrate = expected_total_hashrate / (float)asic_count;
-    expected_domain_hashrate = expected_hashrate;
-    if(hash_domains>0){
-        expected_domain_hashrate = expected_hashrate/(float)asic_count/(float)/hash_domains;
-    }
+    expected_total_hashrate =0; 
 
     lowerThresholdHashratePercent = 1.0f-((expected_hashrate/asic_count/hash_domains*2.0f)/expected_hashrate);
 
@@ -164,6 +165,16 @@ void hashrate_monitor_task(void *pvParameters)
             vTaskDelay(POLL_RATE / portTICK_PERIOD_MS);
             continue;
         }
+
+        if(expected_total_hashrate!=GLOBAL_STATE->POWER_MANAGEMENT_MODULE.expected_hashrate){
+            expected_total_hashrate = GLOBAL_STATE->POWER_MANAGEMENT_MODULE.expected_hashrate;
+            expected_chip_hashrate = expected_total_hashrate / (float)asic_count;
+            expected_domain_hashrate = expected_hashrate;
+            if(hash_domains>0){
+                expected_domain_hashrate = expected_hashrate/(float)asic_count/(float)/hash_domains;
+            }
+        }
+
         ASIC_read_registers(GLOBAL_STATE);
 
         vTaskDelay(100 / portTICK_PERIOD_MS);
