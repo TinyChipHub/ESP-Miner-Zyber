@@ -21,6 +21,7 @@
 static const char *TAG = "hashrate_monitor";
 static uint8_t hashrateErrorCount = 0;
 static int reinitiateCount = 0;
+static int waitCount = 0;
 static float diffLimit = 0.18f; // 18% of expected hashrate
 
 
@@ -61,16 +62,18 @@ static bool check_abnormality(GlobalState * GLOBAL_STATE, float hashrate, float 
     if(is_just_reinitialized) return false;
 
     float diffPercent = fabs(expected - hashrate) / expected;
-    if(diffPercent > 0.12f) {
-        ESP_LOGW(TAG, "Hashrate: %.2f Gh/s, Expected: %.2f Gh/s, Diff: %.2f%%", hashrate, expected, diffPercent * 100.0f);
-        if(reinitiateCount>0){
-            ESP_LOGW(TAG, "Hashrate anomaly detected %d times", reinitiateCount);
-        }
-    }
-    
-    
-    if(hashrate==0 || diffPercent > diffLimit){
+
+    // DEBUG LOGGING
+    // if(diffPercent > 0.12f) {
+    //     ESP_LOGW(TAG, "Hashrate: %.2f Gh/s, Expected: %.2f Gh/s, Diff: %.2f%%", hashrate, expected, diffPercent * 100.0f);
+    //     if(reinitiateCount>0){
+    //         ESP_LOGW(TAG, "Hashrate anomaly detected %d times", reinitiateCount);
+    //     }
+    // }
+      
+    if(hashrate==0 || hashrate>expected?(diffPercent > diffLimit*1.2f):(diffPercent > diffLimit)){
         hashrateErrorCount++;
+        ESP_LOGW(TAG, "Hashrate: %.2f Gh/s, Expected: %.2f Gh/s, Diff: %.2f%%", hashrate, expected, diffPercent * 100.0f);
     }else{
         return true;
     }
@@ -86,7 +89,7 @@ static bool check_abnormality(GlobalState * GLOBAL_STATE, float hashrate, float 
         // flush driver to clear any stale data
         uart_flush(UART_NUM_1);
         vTaskDelay(100 / portTICK_PERIOD_MS);
-        //clear_measurements(GLOBAL_STATE);
+        clear_measurements(GLOBAL_STATE);
         
         //ESP_RETURN_ON_ERROR(TPS546_set_vout(core_voltage * voltage_domains), TAG, "TPS546 set voltage failed!");
         VCORE_set_voltage(GLOBAL_STATE, nvs_config_get_u16(NVS_CONFIG_ASIC_VOLTAGE) / 1000.0);
@@ -167,8 +170,12 @@ void hashrate_monitor_task(void *pvParameters)
             continue;
         }
         if(is_just_reinitialized){
-            is_just_reinitialized = false;
+            
             vTaskDelay(2000 / portTICK_PERIOD_MS);
+            if(waitCount++>1){
+                is_just_reinitialized=false;
+                waitCount=0;
+            }
             continue;
         }
 
