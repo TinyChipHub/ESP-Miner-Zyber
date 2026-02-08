@@ -30,6 +30,8 @@ static bool is_just_reinitialized=false;
 static float expected_chip_hashrate;
 static float expected_total_hashrate;
 static float expected_domain_hashrate;
+static int error_reset_count = 0;
+static int highest_power = 1;
 
 static float sum_hashrates(measurement_t * measurement, int asic_count)
 {
@@ -62,6 +64,7 @@ static bool check_abnormality(GlobalState * GLOBAL_STATE, float hashrate, float 
     if(is_just_reinitialized) return false;
 
     float diffPercent = fabs(expected - hashrate) / expected;
+    float powerDiffPercent = GLOBAL_STATE->POWER_MANAGEMENT_MODULE.power > 0 ? fabs(highest_power - GLOBAL_STATE->POWER_MANAGEMENT_MODULE.power) / highest_power : 1.0f;
 
     // DEBUG LOGGING
     // if(diffPercent > 0.12f) {
@@ -75,21 +78,28 @@ static bool check_abnormality(GlobalState * GLOBAL_STATE, float hashrate, float 
         hashrateErrorCount++;
         //ESP_LOGW(TAG, "Hashrate: %.2f Gh/s, Expected: %.2f Gh/s, Diff: %.2f%%", hashrate, expected, diffPercent * 100.0f);
     }else{
+        if(hashrateErrorCount>0 && error_reset_count++>100){
+            error_reset_count=0;
+            hashrateErrorCount=0;
+        }
         return true;
     }
 
-    if (hashrateErrorCount >= 50) { // If low hashrate detected 5 times consecutively
+    if (powerDiffPercent>0.5 || hashrateErrorCount >= 150) { // If low hashrate detected 5 times consecutively
         is_reinitialize = true;
         reinitiateCount++;
 
         GLOBAL_STATE->ASIC_initalized = false;
+        // HashrateMonitorModule * HASHRATE_MONITOR_MODULE = &GLOBAL_STATE->HASHRATE_MONITOR_MODULE;
+
+        // HASHRATE_MONITOR_MODULE->is_initialized = false;
+
         // Give tasks time to complete any current UART operation and notice the flag
         vTaskDelay(500 / portTICK_PERIOD_MS);
         ESP_LOGI(TAG, "Flushing UART buffers...");
         // flush driver to clear any stale data
         uart_flush(UART_NUM_1);
         vTaskDelay(100 / portTICK_PERIOD_MS);
-        clear_measurements(GLOBAL_STATE);
         
         //ESP_RETURN_ON_ERROR(TPS546_set_vout(core_voltage * voltage_domains), TAG, "TPS546 set voltage failed!");
         VCORE_set_voltage(GLOBAL_STATE, nvs_config_get_u16(NVS_CONFIG_ASIC_VOLTAGE) / 1000.0);
@@ -99,8 +109,12 @@ static bool check_abnormality(GlobalState * GLOBAL_STATE, float hashrate, float 
         // starting to use ASIC while power management loop tries to change frequency
         uint8_t chip_count = asic_initialize(GLOBAL_STATE, ASIC_INIT_RECOVERY, 2000);
         
-        is_reinitialize = false;
+        // clear_measurements(GLOBAL_STATE);
+        // HASHRATE_MONITOR_MODULE->is_initialized = true;
+        highest_power = 1; // reset highest power after recovery
         is_just_reinitialized = true;
+        is_reinitialize = false;
+        
         hashrateErrorCount = 0; // Reset counter after reinitialization
         if(reinitiateCount%10==0){
             ESP_LOGI(TAG, "Hashrate anomaly detected and recovery performed %d times", reinitiateCount);
@@ -163,15 +177,15 @@ void hashrate_monitor_task(void *pvParameters)
 
     HASHRATE_MONITOR_MODULE->is_initialized = true;
 
-    TickType_t taskWakeTime = xTaskGetTickCount();
+    //TickType_t taskWakeTime = xTaskGetTickCount();
     while (1) {
         if(is_reinitialize){
-            vTaskDelay(2000 / portTICK_PERIOD_MS);
+            vTaskDelay(POLL_RATE / portTICK_PERIOD_MS);
             continue;
         }
         if(is_just_reinitialized){
             
-            vTaskDelay(2000 / portTICK_PERIOD_MS);
+            vTaskDelay(POLL_RATE / portTICK_PERIOD_MS);
             if(waitCount++>1){
                 is_just_reinitialized=false;
                 waitCount=0;
@@ -188,9 +202,14 @@ void hashrate_monitor_task(void *pvParameters)
             }
         }
 
+        if(highest_power<GLOBAL_STATE->POWER_MANAGEMENT_MODULE.power){
+            highest_power = GLOBAL_STATE->POWER_MANAGEMENT_MODULE.power;
+            ESP_LOGI(TAG, "New highest power observed: %d W", highest_power);
+        }
+
         ASIC_read_registers(GLOBAL_STATE);
 
-        vTaskDelay(100 / portTICK_PERIOD_MS);
+        vTaskDelay(200 / portTICK_PERIOD_MS);
 
         float current_hashrate = sum_hashrates(HASHRATE_MONITOR_MODULE->total_measurement, asic_count);
         float error_hashrate = sum_hashrates(HASHRATE_MONITOR_MODULE->error_measurement, asic_count);
@@ -198,7 +217,8 @@ void hashrate_monitor_task(void *pvParameters)
         SYSTEM_MODULE->current_hashrate = current_hashrate;
         // SYSTEM_MODULE->error_percentage = current_hashrate > 0 ? error_hashrate / current_hashrate * 100.f : 0;
 
-        vTaskDelayUntil(&taskWakeTime, POLL_RATE / portTICK_PERIOD_MS);
+        //vTaskDelayUntil(&taskWakeTime, POLL_RATE / portTICK_PERIOD_MS);
+        vTaskDelay(POLL_RATE / portTICK_PERIOD_MS);
     }
 }
 
