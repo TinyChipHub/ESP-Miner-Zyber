@@ -22,7 +22,7 @@
 #define EPSILON 0.0001f
 #define POLL_RATE 1800
 #define MAX_TEMP 90.0
-#define THROTTLE_TEMP 75.0
+#define THROTTLE_TEMP 85.0
 #define SAFE_TEMP 45.0
 #define THROTTLE_TEMP_RANGE (MAX_TEMP - THROTTLE_TEMP)
 
@@ -107,19 +107,21 @@ void POWER_MANAGEMENT_task(void * pvParameters)
         // Refresh PID setpoint from NVS in case it was changed via API
         pid_setPoint = (double)nvs_config_get_u16(NVS_CONFIG_TEMP_TARGET);
 
-        power_management->voltage = Power_get_input_voltage(GLOBAL_STATE);
-        power_management->outVoltage_mv = Power_get_output_voltage(GLOBAL_STATE);
-        power_management->current = Power_get_current(GLOBAL_STATE);
-        power_management->power = power_management->outVoltage_mv * power_management->current / 1000.0 + GLOBAL_STATE->DEVICE_CONFIG.family.power_offset ; // in milliwatts
+        if(GLOBAL_STATE->ASIC_initalized){
+            power_management->voltage = Power_get_input_voltage(GLOBAL_STATE);
+            power_management->outVoltage_mv = Power_get_output_voltage(GLOBAL_STATE);
+            power_management->current = Power_get_current(GLOBAL_STATE);
+            power_management->power = power_management->outVoltage_mv * power_management->current / 1000.0 + GLOBAL_STATE->DEVICE_CONFIG.family.power_offset ; // in milliwatts
 
-        vTaskDelay(100 / portTICK_PERIOD_MS); // Wait 100 seconds
+            vTaskDelay(100 / portTICK_PERIOD_MS); // Wait 100 seconds
+            power_management->fan_rpm = Thermal_get_fan_speed(&GLOBAL_STATE->DEVICE_CONFIG);
+            power_management->fan2_rpm = Thermal_get_fan2_speed(&GLOBAL_STATE->DEVICE_CONFIG);
+            power_management->chip_temp_avg = Thermal_get_chip_temp(GLOBAL_STATE);
+            power_management->chip_temp2_avg = Thermal_get_chip_temp2(GLOBAL_STATE);
 
-        power_management->fan_rpm = Thermal_get_fan_speed(&GLOBAL_STATE->DEVICE_CONFIG);
-        power_management->fan2_rpm = Thermal_get_fan2_speed(&GLOBAL_STATE->DEVICE_CONFIG);
-        power_management->chip_temp_avg = Thermal_get_chip_temp(GLOBAL_STATE);
-        power_management->chip_temp2_avg = Thermal_get_chip_temp2(GLOBAL_STATE);
-
-        power_management->vr_temp = Power_get_vreg_temp(GLOBAL_STATE);
+            power_management->vr_temp = Power_get_vreg_temp(GLOBAL_STATE);
+        }
+        
         bool asic_overheat = 
             power_management->chip_temp_avg > THROTTLE_TEMP
             || power_management->chip_temp2_avg > THROTTLE_TEMP;
