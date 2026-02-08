@@ -73,7 +73,7 @@ static bool check_abnormality(GlobalState * GLOBAL_STATE, float hashrate, float 
       
     if(hashrate==0 || hashrate>expected?(diffPercent > diffLimit*1.2f):(diffPercent > diffLimit)){
         hashrateErrorCount++;
-        ESP_LOGW(TAG, "Hashrate: %.2f Gh/s, Expected: %.2f Gh/s, Diff: %.2f%%", hashrate, expected, diffPercent * 100.0f);
+        //ESP_LOGW(TAG, "Hashrate: %.2f Gh/s, Expected: %.2f Gh/s, Diff: %.2f%%", hashrate, expected, diffPercent * 100.0f);
     }else{
         return true;
     }

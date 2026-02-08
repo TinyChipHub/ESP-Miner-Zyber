@@ -66,7 +66,7 @@ float Thermal_get_chip_temp(GlobalState * GLOBAL_STATE)
 
     if(GLOBAL_STATE->DEVICE_CONFIG.has_three_fan){
         if (GLOBAL_STATE->DEVICE_CONFIG.emc_internal_temp) {
-            return EMC2101_get_internal_temp();
+            return EMC2101_get_external_temp();
         } else {
             return EMC2101_get_external_temp();
         }
