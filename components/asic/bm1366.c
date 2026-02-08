@@ -35,7 +35,7 @@
 #define MISC_CONTROL 0x18
 
 static const register_type_t REGISTER_MAP[] = {
-    [0x4C] = REGISTER_ERROR_COUNT,
+    //[0x4C] = REGISTER_ERROR_COUNT,
     [0x88] = REGISTER_DOMAIN_0_COUNT,
     [0x89] = REGISTER_DOMAIN_1_COUNT,
     [0x8A] = REGISTER_DOMAIN_2_COUNT,

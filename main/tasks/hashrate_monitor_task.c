@@ -21,7 +21,7 @@
 static const char *TAG = "hashrate_monitor";
 static uint8_t hashrateErrorCount = 0;
 static int reinitiateCount = 0;
-static float lowerThresholdHashratePercent = 0.18f; // 82% of expected hashrate
+static float diffLimit = 0.18f; // 18% of expected hashrate
 
 
 static bool is_reinitialize=false;
@@ -55,46 +55,27 @@ static void clear_measurements(GlobalState * GLOBAL_STATE)
     memset(HASHRATE_MONITOR_MODULE->error_measurement, 0, asic_count * sizeof(measurement_t));
 }
 
-static void update_hashrate(uint32_t value, measurement_t * measurement, int asic_nr)
-{
-    uint8_t flag_long = (value & 0x80000000) >> 31;
-    uint32_t hashrate_value = value & 0x7FFFFFFF;    
-
-    if (hashrate_value != 0x007FFFFF && !flag_long) {
-        float hashrate = hashrate_value * (float)HASHRATE_UNIT; // Make sure it stays in float
-        float diff = fabsf(hashrate - expected_chip_hashrate)/expected_chip_hashrate;
-        measurement[asic_nr].hashrate =  hashrate / 1e9f; // Convert to Gh/s
-    }
-}
-
-static void update_hash_counter(uint32_t time_ms, uint32_t value, measurement_t * measurement)
-{
-    uint32_t previous_time_ms = measurement->time_ms;
-    if (previous_time_ms != 0) {
-        uint32_t duration_ms = time_ms - previous_time_ms;
-        uint32_t counter = value - measurement->value; // Compute counter difference, handling uint32_t wraparound
-        measurement->hashrate = hashCounterToGhs(duration_ms, counter);
-    }
-
-    measurement->value = value;
-    measurement->time_ms = time_ms;
-}
-
-bool check_anomaly(void *pvParameters, float hashrate, float expected)
+static bool check_abnormality(GlobalState * GLOBAL_STATE, float hashrate, float expected)
 {
     if(is_reinitialize) return false;
     if(is_just_reinitialized) return false;
 
-    GlobalState * GLOBAL_STATE = (GlobalState *)pvParameters;
-
     float diffPercent = fabs(expected - hashrate) / expected;
-    if(hashrate==0 || diffPercent > lowerThresholdHashratePercent){
+    if(diffPercent > 0.12f) {
+        ESP_LOGW(TAG, "Hashrate: %.2f Gh/s, Expected: %.2f Gh/s, Diff: %.2f%%", hashrate, expected, diffPercent * 100.0f);
+        if(reinitiateCount>0){
+            ESP_LOGW(TAG, "Hashrate anomaly detected %d times", reinitiateCount);
+        }
+    }
+    
+    
+    if(hashrate==0 || diffPercent > diffLimit){
         hashrateErrorCount++;
     }else{
         return true;
     }
 
-    if (hashrateErrorCount >= 5) { // If low hashrate detected 5 times consecutively
+    if (hashrateErrorCount >= 50) { // If low hashrate detected 5 times consecutively
         is_reinitialize = true;
         reinitiateCount++;
 
@@ -122,7 +103,36 @@ bool check_anomaly(void *pvParameters, float hashrate, float expected)
             ESP_LOGI(TAG, "Hashrate anomaly detected and recovery performed %d times", reinitiateCount);
         }
     }
+    return false;
+}
 
+static void update_hashrate(GlobalState * GLOBAL_STATE, uint32_t value, measurement_t * measurement, int asic_nr)
+{
+    uint8_t flag_long = (value & 0x80000000) >> 31;
+    uint32_t hashrate_value = value & 0x7FFFFFFF;    
+
+    if (hashrate_value != 0x007FFFFF && !flag_long) {
+        float hashrate = hashrate_value * (float)HASHRATE_UNIT; // Make sure it stays in float
+        if(check_abnormality(GLOBAL_STATE, hashrate, expected_chip_hashrate)){
+            measurement[asic_nr].hashrate =  hashrate / 1e9f; // Convert to Gh/s
+        }
+    }
+}
+
+static void update_hash_counter(GlobalState * GLOBAL_STATE, bool isChip, uint32_t time_ms, uint32_t value, measurement_t * measurement)
+{
+    uint32_t previous_time_ms = measurement->time_ms;
+    if (previous_time_ms != 0) {
+        uint32_t duration_ms = time_ms - previous_time_ms;
+        uint32_t counter = value - measurement->value; // Compute counter difference, handling uint32_t wraparound
+        float hashrate = hashCounterToGhs(duration_ms, counter);
+        if(check_abnormality(GLOBAL_STATE, hashrate, isChip?expected_chip_hashrate:expected_domain_hashrate)){
+            measurement->hashrate = hashrate;
+        }
+    }
+
+    measurement->value = value;
+    measurement->time_ms = time_ms;
 }
 
 void hashrate_monitor_task(void *pvParameters)
@@ -134,11 +144,7 @@ void hashrate_monitor_task(void *pvParameters)
     int asic_count = GLOBAL_STATE->DEVICE_CONFIG.family.asic_count;
     int hash_domains = GLOBAL_STATE->DEVICE_CONFIG.family.asic.hash_domains;
 
-    expected_total_hashrate =0; 
-
-    lowerThresholdHashratePercent = 1.0f-((expected_hashrate/asic_count/hash_domains*2.0f)/expected_hashrate);
-
-    ESP_LOGI(TAG, "Calculated lower threshold hashrate percent: %.2f%%", lowerThresholdHashratePercent * 100.0f);
+    expected_total_hashrate = 0; 
 
     HASHRATE_MONITOR_MODULE->total_measurement = heap_caps_malloc(asic_count * sizeof(measurement_t), MALLOC_CAP_SPIRAM);
     if (hash_domains > 0) {
@@ -157,21 +163,21 @@ void hashrate_monitor_task(void *pvParameters)
     TickType_t taskWakeTime = xTaskGetTickCount();
     while (1) {
         if(is_reinitialize){
-            vTaskDelay(200 / portTICK_PERIOD_MS);
+            vTaskDelay(2000 / portTICK_PERIOD_MS);
             continue;
         }
         if(is_just_reinitialized){
             is_just_reinitialized = false;
-            vTaskDelay(POLL_RATE / portTICK_PERIOD_MS);
+            vTaskDelay(2000 / portTICK_PERIOD_MS);
             continue;
         }
 
         if(expected_total_hashrate!=GLOBAL_STATE->POWER_MANAGEMENT_MODULE.expected_hashrate){
             expected_total_hashrate = GLOBAL_STATE->POWER_MANAGEMENT_MODULE.expected_hashrate;
             expected_chip_hashrate = expected_total_hashrate / (float)asic_count;
-            expected_domain_hashrate = expected_hashrate;
+            //expected_domain_hashrate = expected_chip_hashrate/4;
             if(hash_domains>0){
-                expected_domain_hashrate = expected_hashrate/(float)asic_count/(float)/hash_domains;
+                expected_domain_hashrate = expected_chip_hashrate/(float)hash_domains;
             }
         }
 
@@ -205,25 +211,25 @@ void hashrate_monitor_register_read(void *pvParameters, register_type_t register
 
     switch(register_type) {
         case REGISTER_HASHRATE:
-            update_hashrate(value, HASHRATE_MONITOR_MODULE->total_measurement, asic_nr);
+            update_hashrate(GLOBAL_STATE, value, HASHRATE_MONITOR_MODULE->total_measurement, asic_nr);
             break;
         case REGISTER_TOTAL_COUNT:
-            update_hash_counter(time_ms, value, &HASHRATE_MONITOR_MODULE->total_measurement[asic_nr]);
+            update_hash_counter(GLOBAL_STATE, true,time_ms, value, &HASHRATE_MONITOR_MODULE->total_measurement[asic_nr]);
             break;
         case REGISTER_DOMAIN_0_COUNT:
-            update_hash_counter(time_ms, value, &HASHRATE_MONITOR_MODULE->domain_measurements[asic_nr][0]);
+            update_hash_counter(GLOBAL_STATE, false,time_ms, value, &HASHRATE_MONITOR_MODULE->domain_measurements[asic_nr][0]);
             break;
         case REGISTER_DOMAIN_1_COUNT:
-            update_hash_counter(time_ms, value, &HASHRATE_MONITOR_MODULE->domain_measurements[asic_nr][1]);
+            update_hash_counter(GLOBAL_STATE, false,time_ms, value, &HASHRATE_MONITOR_MODULE->domain_measurements[asic_nr][1]);
             break;
         case REGISTER_DOMAIN_2_COUNT:
-            update_hash_counter(time_ms, value, &HASHRATE_MONITOR_MODULE->domain_measurements[asic_nr][2]);
+            update_hash_counter(GLOBAL_STATE, false,time_ms, value, &HASHRATE_MONITOR_MODULE->domain_measurements[asic_nr][2]);
             break;
         case REGISTER_DOMAIN_3_COUNT:
-            update_hash_counter(time_ms, value, &HASHRATE_MONITOR_MODULE->domain_measurements[asic_nr][3]);
+            update_hash_counter(GLOBAL_STATE, false,time_ms, value, &HASHRATE_MONITOR_MODULE->domain_measurements[asic_nr][3]);
             break;
         case REGISTER_ERROR_COUNT:
-            update_hash_counter(time_ms, value, &HASHRATE_MONITOR_MODULE->error_measurement[asic_nr]);
+            //update_hash_counter(time_ms, value, &HASHRATE_MONITOR_MODULE->error_measurement[asic_nr]);
             break;
         case REGISTER_INVALID:
             ESP_LOGE(TAG, "Invalid register type");
