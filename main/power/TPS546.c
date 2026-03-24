@@ -367,11 +367,11 @@ esp_err_t TPS546_init(TPS546_CONFIG config)
 
     ESP_LOGI(TAG, "Device ID: %02x %02x %02x %02x %02x %02x", id[0], id[1], id[2], id[3], id[4], id[5]);
 
-    if (!id_matched) {
+    // if (!id_matched) {
 
-        ESP_LOGE(TAG, "Cannot find TPS546 regulator - Device ID mismatch");
-        return ESP_FAIL;
-    }
+    //     ESP_LOGE(TAG, "Cannot find TPS546 regulator - Device ID mismatch");
+    //     return ESP_FAIL;
+    // }
 
     //write operation register to turn off power
     u8_value = OPERATION_OFF;
@@ -393,7 +393,7 @@ esp_err_t TPS546_init(TPS546_CONFIG config)
     ESP_LOGI(TAG, "Writing new config values");
     smb_read_byte(PMBUS_VOUT_MODE, &voutmode);
     ESP_LOGI(TAG, "VOUT_MODE: %02x", voutmode);
-    TPS546_write_entire_config();
+    TPS546_write_entire_config(config.TPS546_INIT_STACK_CONFIG);
     //}
 
     // /* Show temperature */
@@ -517,7 +517,7 @@ void TPS546_read_mfr_info(uint8_t *read_mfr_revision)
 /**
  * @brief Set all the relevant config registers for normal operation 
 */
-void TPS546_write_entire_config(void)
+void TPS546_write_entire_config(uint16_t stack_config)
 {
     ESP_LOGI(TAG, "---Writing new config values to TPS546---");
     /* set up the ON_OFF_CONFIG */
@@ -530,6 +530,11 @@ void TPS546_write_entire_config(void)
     /* Phase */
     ESP_LOGI(TAG, "Setting PHASE: %02X", TPS546_INIT_PHASE);
     smb_write_byte(PMBUS_PHASE, TPS546_INIT_PHASE);
+
+    /* Phase Stack Config Setting*/
+    ESP_LOGI(TAG, "Setting PHASE stack config: %04X", stack_config);
+    smb_write_word(PMBUS_STACK_CONFIG, stack_config);
+
 
     /* Switch frequency */
     ESP_LOGI(TAG, "Setting FREQUENCY: %dMHz", TPS546_INIT_FREQUENCY);

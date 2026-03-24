@@ -40,6 +40,8 @@ typedef struct
   /* iout current */
   float TPS546_INIT_IOUT_OC_WARN_LIMIT; /* A */
   float TPS546_INIT_IOUT_OC_FAULT_LIMIT; /* A */
+
+  uint16_t TPS546_INIT_STACK_CONFIG; /* stack configuration */
 } TPS546_CONFIG;
 
 /* vin voltage */
@@ -172,7 +174,7 @@ typedef struct
 esp_err_t TPS546_init(TPS546_CONFIG config);
 
 void TPS546_read_mfr_info(uint8_t *);
-void TPS546_write_entire_config(void);
+void TPS546_write_entire_config(uint16_t stack_config);
 int TPS546_get_frequency(void);
 void TPS546_set_frequency(int);
 int TPS546_get_temperature(void);
