@@ -13,7 +13,7 @@ esp-miner is open source ESP32 firmware for the [Bitaxe](https://github.com/skot
 If you are looking for premade images to load on your Bitaxe, check out the [releases](https://github.com/bitaxeorg/ESP-Miner/releases) page. Maybe you want [instructions](https://github.com/bitaxeorg/ESP-Miner/blob/master/flashing.md) for loading factory images.
 
 # Bitaxetool
-We also have a command line python tool for flashing Bitaxe and updating the config called Bitaxetool 
+We also have a command line python tool for flashing Bitaxe and updating the config called [Bitaxetool](https://tinychiphub.com/blogs/technical/a-step-by-step-guide-to-restore-your-miner) 
 
 **Bitaxetool Requires Python3.4 or later and pip**
 
@@ -34,14 +34,14 @@ bitaxetool --firmware ./esp-miner-factory-401-v2.4.2.bin
 ```
 bitaxetool --config ./config-401.cvs
 ```
-- Flash both a factory image _and_ a config to your Bitaxe: note the settings in the config file will overwrite the config already baked into the factory image:
+- Flash both a factory image _and_ a config to your [Bitaxe miner](https://tinychiphub.com/collections/home-miner): note the settings in the config file will overwrite the config already baked into the factory image:
 
 ```
 bitaxetool --config ./config-401.cvs --firmware ./esp-miner-factory-401-v2.4.2.bin
 ```
 
 ## AxeOS API
-The esp-miner UI is called AxeOS and provides an API to expose actions and information.
+The esp-miner UI is called [AxeOS](https://tinychiphub.com/blogs/technical/firmwares-and-instructions-for-upgrading-and-flashing) and provides an API to expose actions and information.
 
 For more details take a look at `main/http_server/http_server.c`.
 
@@ -74,7 +74,7 @@ Some API examples in curl:
 
 ## Administration
 
-The firmware hosts a small web server on port 80 for administrative purposes. Once the Bitaxe device is connected to the local network, the admin web front end may be accessed via a web browser connected to the same network at `http://<IP>`, replacing `IP` with the LAN IP address of the Bitaxe device, or `http://bitaxe`, provided your network supports mDNS configuration.
+The firmware hosts a small web server on port 80 for administrative purposes. Once the [Bitaxe device](https://tinychiphub.com/products/bitaxe-gt) is connected to the local network, the admin web front end may be accessed via a web browser connected to the same network at `http://<IP>`, replacing `IP` with the LAN IP address of the Bitaxe device, or `http://bitaxe`, provided your network supports mDNS configuration.
 
 ### Recovery
 
