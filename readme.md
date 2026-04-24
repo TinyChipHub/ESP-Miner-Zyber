@@ -82,7 +82,7 @@ In the event that the admin web front end is inaccessible, for example because o
 
 ### Unlock Settings
 
-In order to unlock the Input fields for ASIC Frequency and ASIC Core Voltage you need to append `?oc` to the end of the settings tab URL in your browser. Be aware that without additional cooling overclocking can overheat and/or damage your Bitaxe.
+In order to unlock the Input fields for ASIC Frequency and ASIC Core Voltage you need to append `?oc` to the end of the settings tab URL in your browser. Be aware that without additional cooling [overclocking](https://tinychiphub.com/blogs/technical/master-your-asic-miner-tuning-overclocking-core-voltage-frequency-setting-guide) can overheat and/or damage your Bitaxe.
 
 ## Development
 
@@ -101,7 +101,7 @@ idf.py build && ./merge_bin.sh ./esp-miner-merged.bin
 
 Note: the merge_bin.sh script is a custom script that merges the bootloader, partition table, and the application binary into a single file.
 
-Note: if using VSCode, you may have to configure the settings.json file to match your esp hardware version. For example, if your bitaxe has something other than an esp32-s3, you will need to change the version in the `.vscode/settings.json` file.
+Note: if using VSCode, you may have to configure the settings.json file to match your esp hardware version. For example, if your [bitaxe](https://tinychiphub.com/products/bitaxe-gamma) has something other than an esp32-s3, you will need to change the version in the `.vscode/settings.json` file.
 
 ### Flashing
 
@@ -113,7 +113,7 @@ bitaxetool --config ./config-xxx.cvs --firmware ./esp-miner-merged.bin
 
 where xxx is the config file for your hardware version. You can see the list of available config files in the root of the repository.
 
-Note: if you are developing within a dev container, you will need to run the bitaxetool command from outside the container. Otherwise, you will get an error about the device not being found.
+Note: if you are developing within a dev container, you will need to run the bitaxetool command from outside the container. Otherwise, you will get an error about the [miner](https://tinychiphub.com/) not being found.
 
 ## Attributions
 
