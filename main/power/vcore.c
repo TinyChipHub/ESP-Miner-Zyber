@@ -13,39 +13,39 @@
 
 static const char *TAG = "vcore";
 
-static TPS546_CONFIG TPS546_CONFIG_DEFAULT = {
-    /* vin voltage */
-    .TPS546_INIT_VIN_ON = 11.5,
-    .TPS546_INIT_VIN_OFF = 10.5,
-    .TPS546_INIT_VIN_UV_WARN_LIMIT = 11.0,
-    .TPS546_INIT_VIN_OV_FAULT_LIMIT = 14.0,
-    /* vout voltage */
-    .TPS546_INIT_SCALE_LOOP = 0.125,
-    .TPS546_INIT_VOUT_MIN = 2.5,
-    .TPS546_INIT_VOUT_MAX = 5.5,
-    .TPS546_INIT_VOUT_COMMAND = 4.8,
-    /* iout current */
-    .TPS546_INIT_IOUT_OC_WARN_LIMIT = 80.00, /* A */
-    .TPS546_INIT_IOUT_OC_FAULT_LIMIT = 85.00, /* A */
-    .TPS546_INIT_STACK_CONFIG = 0x0001 /* default stack configuration, 2 phases */
-};
+static TPS546_CONFIG get_tps546_config(const FamilyConfig * family)
+{
+    TPS546_CONFIG config = {0};
 
-static TPS546_CONFIG TPS546_CONFIG_8GPLUS = {
-    /* vin voltage */
-    .TPS546_INIT_VIN_ON = 11.5,
-    .TPS546_INIT_VIN_OFF = 10.5,
-    .TPS546_INIT_VIN_UV_WARN_LIMIT = 11.0,
-    .TPS546_INIT_VIN_OV_FAULT_LIMIT = 14.0,
-    /* vout voltage */
-    .TPS546_INIT_SCALE_LOOP = 0.125,
-    .TPS546_INIT_VOUT_MIN = 2.5,
-    .TPS546_INIT_VOUT_MAX = 5.5,
-    .TPS546_INIT_VOUT_COMMAND = 4.8,
-    /* iout current */
-    .TPS546_INIT_IOUT_OC_WARN_LIMIT = 80.00, /* A */
-    .TPS546_INIT_IOUT_OC_FAULT_LIMIT = 85.00, /* A */
-    .TPS546_INIT_STACK_CONFIG = 0x0001   /* default stack configuration, 3 phases */
-};
+    // Set family-specific parameters
+    switch (family->id) {
+    case ZYBER8S:
+    case ZYBER8G:
+    case ZYBER8GPLUS:
+        config.TPS546_INIT_PHASE = TPS546_INIT_PHASE_MULTI;
+        config.TPS546_INIT_VIN_ON = 11.0;
+        config.TPS546_INIT_VIN_OFF = 10.5;
+        config.TPS546_INIT_VIN_UV_WARN_LIMIT = 11.0;
+        config.TPS546_INIT_VIN_OV_FAULT_LIMIT = 14.0;
+        config.TPS546_INIT_SCALE_LOOP = 0.25;
+        config.TPS546_INIT_VOUT_MIN = 1;
+        config.TPS546_INIT_VOUT_MAX = 3;
+        config.TPS546_INIT_VOUT_COMMAND = 1.2;
+        config.TPS546_INIT_IOUT_OC_WARN_LIMIT = 70.00;
+        config.TPS546_INIT_IOUT_OC_FAULT_LIMIT = 80.00;
+        // Multi-phase stacking configuration for 2 TPS modules
+        config.TPS546_INIT_STACK_CONFIG = 0x0001; // 2 modules (One-Slave, 2-phase)
+        config.TPS546_INIT_SYNC_CONFIG = 0xD0;    // Enable Auto Detect SYNC
+        config.TPS546_INIT_COMPENSATION_CONFIG[0] = 0x12;
+        config.TPS546_INIT_COMPENSATION_CONFIG[1] = 0x34;
+        config.TPS546_INIT_COMPENSATION_CONFIG[2] = 0x42;
+        config.TPS546_INIT_COMPENSATION_CONFIG[3] = 0x21;
+        config.TPS546_INIT_COMPENSATION_CONFIG[4] = 0x04;
+        break;
+    }
+
+    return config;
+}
 
 esp_err_t VCORE_init(GlobalState * GLOBAL_STATE)
 {
@@ -55,10 +55,10 @@ esp_err_t VCORE_init(GlobalState * GLOBAL_STATE)
         switch (GLOBAL_STATE->DEVICE_CONFIG.family.id) {
             case ZYBER8S:
             case ZYBER8G:
-                ESP_RETURN_ON_ERROR(TPS546_init(TPS546_CONFIG_DEFAULT), TAG, "TPS546 init failed!");
+                ESP_RETURN_ON_ERROR(TPS546_init(get_tps546_config(&GLOBAL_STATE->DEVICE_CONFIG.family)), TAG, "TPS546 init failed!");
                 break;
             case ZYBER8GPLUS:
-                ESP_RETURN_ON_ERROR(TPS546_init(TPS546_CONFIG_8GPLUS), TAG, "TPS546 init failed!");
+                ESP_RETURN_ON_ERROR(TPS546_init(get_tps546_config(&GLOBAL_STATE->DEVICE_CONFIG.family)), TAG, "TPS546 init failed!");
                 break;
         }
     }
