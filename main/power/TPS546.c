@@ -370,7 +370,7 @@ esp_err_t TPS546_init(TPS546_CONFIG config)
     if (!id_matched) {
 
         ESP_LOGE(TAG, "Cannot find TPS546 regulator - Device ID mismatch");
-        return ESP_FAIL;
+        //return ESP_FAIL;
     }
 
     //write operation register to turn off power
@@ -526,6 +526,15 @@ void TPS546_write_entire_config(void)
     //     ESP_LOGE(TAG, "Failed to write ON_OFF_CONFIG");
     //     return;
     // }
+
+
+    // STACK_CONFIG
+    ESP_LOGI(TAG, "Setting STACK_CONFIG: %04X", 0x0002);
+    smb_write_word(PMBUS_STACK_CONFIG, 0x0002);
+
+    // SYNC_CONFIG
+    ESP_LOGI(TAG, "Setting SYNC_CONFIG: %02X", 0xD0);
+    smb_write_byte(PMBUS_SYNC_CONFIG, 0xD0);
 
     /* Phase */
     ESP_LOGI(TAG, "Setting PHASE: %02X", TPS546_INIT_PHASE);

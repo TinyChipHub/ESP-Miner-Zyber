@@ -23,7 +23,7 @@
 
 #define TPS546_INIT_PHASE 0xFF  /* default phase register value from TPS546 datasheet */
 
-#define TPS546_INIT_FREQUENCY 650
+#define TPS546_INIT_FREQUENCY 325
   /* KHz */
 
 typedef struct
@@ -92,8 +92,8 @@ typedef struct
 #define TPS546_INIT_OT_FAULT_RESPONSE 0xFF /* wait for cooling, and retry */
 
   /* timing */
-#define TPS546_INIT_TON_DELAY 0
-#define TPS546_INIT_TON_RISE 3
+#define TPS546_INIT_TON_DELAY 2
+#define TPS546_INIT_TON_RISE 8
 #define TPS546_INIT_TON_MAX_FAULT_LIMIT 0
 #define TPS546_INIT_TON_MAX_FAULT_RESPONSE 0x3B
 #define TPS546_INIT_TOFF_DELAY 0
