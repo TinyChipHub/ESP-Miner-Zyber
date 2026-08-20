@@ -529,12 +529,12 @@ void TPS546_write_entire_config(void)
 
 
     // STACK_CONFIG
-    ESP_LOGI(TAG, "Setting STACK_CONFIG: %04X", 0x0002);
-    smb_write_word(PMBUS_STACK_CONFIG, 0x0002);
+    ESP_LOGI(TAG, "Setting STACK_CONFIG: %04X", tps546_config.TPS546_INIT_STACK_CONFIG);
+    smb_write_word(PMBUS_STACK_CONFIG, tps546_config.TPS546_INIT_STACK_CONFIG);
 
     // SYNC_CONFIG
-    ESP_LOGI(TAG, "Setting SYNC_CONFIG: %02X", 0xD0);
-    smb_write_byte(PMBUS_SYNC_CONFIG, 0xD0);
+    ESP_LOGI(TAG, "Setting SYNC_CONFIG: %02X", INIT_SYNC_CONFIG);
+    smb_write_byte(PMBUS_SYNC_CONFIG, INIT_SYNC_CONFIG);
 
     /* Phase */
     ESP_LOGI(TAG, "Setting PHASE: %02X", TPS546_INIT_PHASE);

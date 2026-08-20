@@ -41,6 +41,8 @@ typedef struct
   /* iout current */
   float TPS546_INIT_IOUT_OC_WARN_LIMIT; /* A */
   float TPS546_INIT_IOUT_OC_FAULT_LIMIT; /* A */
+
+  float TPS546_INIT_STACK_CONFIG;
 } TPS546_CONFIG;
 
 /* vin voltage */
@@ -92,15 +94,15 @@ typedef struct
 #define TPS546_INIT_OT_FAULT_RESPONSE 0xFF /* wait for cooling, and retry */
 
   /* timing */
-#define TPS546_INIT_TON_DELAY 2
-#define TPS546_INIT_TON_RISE 8
+#define TPS546_INIT_TON_DELAY 3
+#define TPS546_INIT_TON_RISE 10
 #define TPS546_INIT_TON_MAX_FAULT_LIMIT 0
 #define TPS546_INIT_TON_MAX_FAULT_RESPONSE 0x3B
 #define TPS546_INIT_TOFF_DELAY 0
 #define TPS546_INIT_TOFF_FALL 0
 
 #define INIT_STACK_CONFIG 0x0001 //One-Slave, 2-phase
-#define INIT_SYNC_CONFIG 0x00D0 //Enable Auto Detect SYNC
+#define INIT_SYNC_CONFIG 0xD0 //Enable Auto Detect SYNC
 #define INIT_PIN_DETECT_OVERRIDE 0xFFFF //use pin values
 
 /*-------------------------*/

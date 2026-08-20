@@ -26,7 +26,25 @@ static TPS546_CONFIG TPS546_CONFIG_DEFAULT = {
     .TPS546_INIT_VOUT_COMMAND = 4.6,
     /* iout current */
     .TPS546_INIT_IOUT_OC_WARN_LIMIT = 80.00, /* A */
-    .TPS546_INIT_IOUT_OC_FAULT_LIMIT = 85.00 /* A */
+    .TPS546_INIT_IOUT_OC_FAULT_LIMIT = 85.00, /* A */
+    .TPS546_INIT_STACK_CONFIG = 0x0001
+};
+
+static TPS546_CONFIG TPS546_CONFIG_12G = {
+    /* vin voltage */
+    .TPS546_INIT_VIN_ON = 11.5,
+    .TPS546_INIT_VIN_OFF = 10.5,
+    .TPS546_INIT_VIN_UV_WARN_LIMIT = 11.0,
+    .TPS546_INIT_VIN_OV_FAULT_LIMIT = 14.0,
+    /* vout voltage */
+    .TPS546_INIT_SCALE_LOOP = 0.125,
+    .TPS546_INIT_VOUT_MIN = 2.5,
+    .TPS546_INIT_VOUT_MAX = 5.5,
+    .TPS546_INIT_VOUT_COMMAND = 4.6,
+    /* iout current */
+    .TPS546_INIT_IOUT_OC_WARN_LIMIT = 110.00, /* A */
+    .TPS546_INIT_IOUT_OC_FAULT_LIMIT = 120.00, /* A */
+    .TPS546_INIT_STACK_CONFIG = 0x0002
 };
 
 esp_err_t VCORE_init(GlobalState * GLOBAL_STATE)
@@ -37,8 +55,10 @@ esp_err_t VCORE_init(GlobalState * GLOBAL_STATE)
         switch (GLOBAL_STATE->DEVICE_CONFIG.family.id) {
             case ZYBER8S:
             case ZYBER8G:
-            case ZYBER8GPLUS:
                 ESP_RETURN_ON_ERROR(TPS546_init(TPS546_CONFIG_DEFAULT), TAG, "TPS546 init failed!");
+                break;
+            case ZYBER12G:
+                ESP_RETURN_ON_ERROR(TPS546_init(TPS546_CONFIG_12G), TAG, "TPS546 init failed!");
                 break;
         }
     }
