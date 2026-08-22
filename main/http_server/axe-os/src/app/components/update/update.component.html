@@ -45,9 +45,9 @@
                                 <a style="text-decoration: underline;" target="_blank"
                                     [href]="asset.browser_download_url">esp-miner-zyber8g.bin</a>
                             </div>
-                            <div *ngIf="(boardVersion=='1200') && asset.name == 'esp-miner-zyber8gplus.bin'">
+                            <div *ngIf="(boardVersion=='1200') && asset.name == 'esp-miner-zyber12g.bin'">
                                 <a style="text-decoration: underline;" target="_blank"
-                                    [href]="asset.browser_download_url">esp-miner-zyber8gplus.bin</a>
+                                    [href]="asset.browser_download_url">esp-miner-zyber12g.bin</a>
                             </div>
                             <div *ngIf="asset.name == 'www.bin'">
                                 <a style="text-decoration: underline;" target="_blank"
@@ -88,8 +88,9 @@
                 <ng-container *ngIf="boardVersion=='1100'||boardVersion=='1110'">
                     <small class="text-orange-500">(esp-miner-zyber8g.bin)</small>
                 </ng-container>
-                <!-- <small *ngIf="boardVersion=='1000'">(esp-miner-zyber8s.bin)</small> -->
-                <!-- <small *ngIf="boardVersion=='1000'||boardVersion=='1100'">(esp-miner-zyber8g.bin)</small> -->
+                <ng-container *ngIf="boardVersion=='1200'">
+                    <small class="text-orange-500">(esp-miner-zyber12g.bin)</small>
+                </ng-container>
             </div>
 
         </div>

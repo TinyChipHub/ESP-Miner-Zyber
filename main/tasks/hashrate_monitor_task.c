@@ -136,20 +136,20 @@ static void update_hashrate(GlobalState * GLOBAL_STATE, uint32_t value, measurem
     }
 }
 
-static void update_hash_counter(GlobalState * GLOBAL_STATE, bool isChip, uint32_t time_ms, uint32_t value, measurement_t * measurement)
+static void update_hash_counter(GlobalState * GLOBAL_STATE, bool isChip, uint64_t time_us, uint32_t value, measurement_t * measurement)
 {
-    uint32_t previous_time_ms = measurement->time_ms;
-    if (previous_time_ms != 0) {
-        uint32_t duration_ms = time_ms - previous_time_ms;
+    uint64_t previous_time_us = measurement->time_us; // Convert to microseconds
+    if (previous_time_us != 0) {
+        uint32_t duration_us = time_us - previous_time_us; // Convert to microseconds
         uint32_t counter = value - measurement->value; // Compute counter difference, handling uint32_t wraparound
-        float hashrate = hashCounterToGhs(duration_ms, counter);
+        float hashrate = hashCounterToGhs(duration_us, counter);
         if(check_abnormality(GLOBAL_STATE, hashrate, isChip?expected_chip_hashrate:expected_domain_hashrate)){
             measurement->hashrate = hashrate;
         }
     }
 
     measurement->value = value;
-    measurement->time_ms = time_ms;
+    measurement->time_us = time_us;
 }
 
 void hashrate_monitor_task(void *pvParameters)
@@ -224,7 +224,7 @@ void hashrate_monitor_task(void *pvParameters)
 
 void hashrate_monitor_register_read(void *pvParameters, register_type_t register_type, uint8_t asic_nr, uint32_t value)
 {
-    uint32_t time_ms = esp_timer_get_time() / 1000;
+    uint64_t time_us = esp_timer_get_time();
 
     GlobalState * GLOBAL_STATE = (GlobalState *)pvParameters;
     HashrateMonitorModule * HASHRATE_MONITOR_MODULE = &GLOBAL_STATE->HASHRATE_MONITOR_MODULE;
@@ -241,22 +241,22 @@ void hashrate_monitor_register_read(void *pvParameters, register_type_t register
             update_hashrate(GLOBAL_STATE, value, HASHRATE_MONITOR_MODULE->total_measurement, asic_nr);
             break;
         case REGISTER_TOTAL_COUNT:
-            update_hash_counter(GLOBAL_STATE, true,time_ms, value, &HASHRATE_MONITOR_MODULE->total_measurement[asic_nr]);
+            update_hash_counter(GLOBAL_STATE, true,time_us, value, &HASHRATE_MONITOR_MODULE->total_measurement[asic_nr]);
             break;
         case REGISTER_DOMAIN_0_COUNT:
-            update_hash_counter(GLOBAL_STATE, false,time_ms, value, &HASHRATE_MONITOR_MODULE->domain_measurements[asic_nr][0]);
+            update_hash_counter(GLOBAL_STATE, false,time_us, value, &HASHRATE_MONITOR_MODULE->domain_measurements[asic_nr][0]);
             break;
         case REGISTER_DOMAIN_1_COUNT:
-            update_hash_counter(GLOBAL_STATE, false,time_ms, value, &HASHRATE_MONITOR_MODULE->domain_measurements[asic_nr][1]);
+            update_hash_counter(GLOBAL_STATE, false,time_us, value, &HASHRATE_MONITOR_MODULE->domain_measurements[asic_nr][1]);
             break;
         case REGISTER_DOMAIN_2_COUNT:
-            update_hash_counter(GLOBAL_STATE, false,time_ms, value, &HASHRATE_MONITOR_MODULE->domain_measurements[asic_nr][2]);
+            update_hash_counter(GLOBAL_STATE, false,time_us, value, &HASHRATE_MONITOR_MODULE->domain_measurements[asic_nr][2]);
             break;
         case REGISTER_DOMAIN_3_COUNT:
-            update_hash_counter(GLOBAL_STATE, false,time_ms, value, &HASHRATE_MONITOR_MODULE->domain_measurements[asic_nr][3]);
+            update_hash_counter(GLOBAL_STATE, false,time_us, value, &HASHRATE_MONITOR_MODULE->domain_measurements[asic_nr][3]);
             break;
         case REGISTER_ERROR_COUNT:
-            //update_hash_counter(time_ms, value, &HASHRATE_MONITOR_MODULE->error_measurement[asic_nr]);
+            //update_hash_counter(time_us, value, &HASHRATE_MONITOR_MODULE->error_measurement[asic_nr]);
             break;
         case REGISTER_INVALID:
             ESP_LOGE(TAG, "Invalid register type");
