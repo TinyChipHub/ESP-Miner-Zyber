@@ -55,7 +55,10 @@ esp_err_t VCORE_init(GlobalState * GLOBAL_STATE)
         switch (GLOBAL_STATE->DEVICE_CONFIG.family.id) {
             case ZYBER8S:
             case ZYBER8G:
-                ESP_RETURN_ON_ERROR(TPS546_init(TPS546_CONFIG_DEFAULT), TAG, "TPS546 init failed!");
+                ESP_RETURN_ON_ERROR(TPS546_init(get_tps546_config(&GLOBAL_STATE->DEVICE_CONFIG.family)), TAG, "TPS546 init failed!");
+                break;
+            case ZYBER8GPLUS:
+                ESP_RETURN_ON_ERROR(TPS546_init(get_tps546_config(&GLOBAL_STATE->DEVICE_CONFIG.family)), TAG, "TPS546 init failed!");
                 break;
             case ZYBER12G:
                 ESP_RETURN_ON_ERROR(TPS546_init(TPS546_CONFIG_12G), TAG, "TPS546 init failed!");

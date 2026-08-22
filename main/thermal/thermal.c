@@ -44,7 +44,7 @@ uint16_t Thermal_get_fan_speed(DeviceConfig * DEVICE_CONFIG)
 {
     if (DEVICE_CONFIG->EMC2302) {
         uint16_t fs = EMC2302_get_fan_speed();
-        return fs==0?EMC2101_get_fan_speed():fs;
+        return fs;//==0?DEVICE_CONFIG->EMC2101?EMC2101_get_fan_speed():fs;
     }
     return 0;
 }
@@ -53,7 +53,7 @@ uint16_t Thermal_get_fan2_speed(DeviceConfig * DEVICE_CONFIG)
 {
     if (DEVICE_CONFIG->EMC2302) {
         uint16_t fs = EMC2302_get_fan2_speed();
-        return fs==0?EMC2101_get_fan_speed():fs;
+        return fs;//==0?DEVICE_CONFIG->EMC2101?EMC2101_get_fan_speed():fs;
     }
     return 0;
 }
@@ -68,7 +68,7 @@ float Thermal_get_chip_temp(GlobalState * GLOBAL_STATE)
         if (GLOBAL_STATE->DEVICE_CONFIG.emc_internal_temp) {
             return EMC2101_get_internal_temp();
         } else {
-            return EMC2101_get_external_temp();
+            return EMC2101_get_external_temp()-5;
         }
     }
     if (GLOBAL_STATE->DEVICE_CONFIG.TMP1075) {
