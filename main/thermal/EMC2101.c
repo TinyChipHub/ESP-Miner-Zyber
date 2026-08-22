@@ -42,7 +42,8 @@ esp_err_t EMC2101_init(int temp_offset_param)
     // Bit 3:2(EDGES)=00: 2 Tach pulses per revolution (standard)
     // Bit 1:0(RANGE)=00: PWM Frequency ~22.5 kHz (common setting)
     // //if (invertPolarity) {
-        ESP_RETURN_ON_ERROR(i2c_bitaxe_register_write_byte(emc2101_dev_handle, EMC2101_FAN_CONFIG, 0b00100011), TAG, "Failed to configure fan settings");
+    //ESP_RETURN_ON_ERROR(i2c_bitaxe_register_write_byte(emc2101_dev_handle, EMC2101_FAN_CONFIG, 0b00100011), TAG, "Failed to configure fan settings");
+    ESP_RETURN_ON_ERROR(i2c_bitaxe_register_write_byte(emc2101_dev_handle, EMC2101_FAN_CONFIG, 0x20), TAG, "Failed to configure fan settings");
     // //}
     
 
@@ -102,7 +103,7 @@ uint16_t EMC2101_get_fan_speed(void)
 
     // ESP_LOGI(TAG, "Raw Fan Speed = %02X %02X", tach_msb, tach_lsb);
 
-    reading = tach_lsb | (tach_msb << 8);
+    reading = ((tach_msb << 6) | (tach_lsb >> 2));
     RPM = 5400000 / reading;
 
     // ESP_LOGI(TAG, "Fan Speed = %d RPM", RPM);

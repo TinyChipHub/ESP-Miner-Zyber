@@ -21,12 +21,25 @@
 #define OPERATION_OFF 0x00
 #define OPERATION_ON  0x80
 
-#define TPS546_INIT_PHASE 0xFF  /* default phase register value from TPS546 datasheet */
+#define TPS546_INIT_PHASE_SINGLE 0x00  /* Single-phase (Single TPS) */
+#define TPS546_INIT_PHASE_MULTI   0xFF  /* Multi-phase stack (Multi TPS) */
 
-#define TPS546_INIT_FREQUENCY 650  /* KHz */
+#define TPS546_INIT_FREQUENCY 325
+  /* KHz */
+
+typedef struct {
+  uint16_t status_word;
+  uint8_t  st_vout, st_input, st_iout, st_temp, st_cml, st_mfr, st_other;
+  uint8_t  operation, on_off_config;
+  float    read_vout, read_vin, read_iout;
+  int      read_temp1;
+  float    vout_command;
+} TPS546_StatusSnapshot;
 
 typedef struct
 {
+  /* Phase readout configuration */
+  uint8_t TPS546_INIT_PHASE; /* phase register configuration */
   /* vin voltage */
   float TPS546_INIT_VIN_ON;  /* V */
   float TPS546_INIT_VIN_OFF; /* V */
@@ -40,6 +53,11 @@ typedef struct
   /* iout current */
   float TPS546_INIT_IOUT_OC_WARN_LIMIT; /* A */
   float TPS546_INIT_IOUT_OC_FAULT_LIMIT; /* A */
+  
+  uint16_t TPS546_INIT_STACK_CONFIG; /* Stack configuration */
+  uint8_t TPS546_INIT_SYNC_CONFIG; /* Sync configuration */
+  uint8_t TPS546_INIT_COMPENSATION_CONFIG[5];
+  
 } TPS546_CONFIG;
 
 /* vin voltage */
@@ -62,7 +80,7 @@ typedef struct
 #define TPS546_INIT_VOUT_OV_WARN_LIMIT  1.16 /* %/100 above VOUT_COMMAND */
 #define TPS546_INIT_VOUT_MARGIN_HIGH 1.1 /* %/100 above VOUT */
 //#define TPS546_INIT_VOUT_COMMAND 1.2  /* V absolute value */
-#define TPS546_INIT_VOUT_MARGIN_LOW 0.90 /* %/100 below VOUT */
+#define TPS546_INIT_VOUT_MARGIN_LOW 0.9 /* %/100 below VOUT */
 #define TPS546_INIT_VOUT_UV_WARN_LIMIT 0.90  /* %/100 below VOUT_COMMAND */
 #define TPS546_INIT_VOUT_UV_FAULT_LIMIT 0.75 /* %/100 below VOUT_COMMAND */
 //#define TPS546_INIT_VOUT_MIN 1 /* v */
@@ -76,7 +94,7 @@ typedef struct
 //11 -> Shutdown Immediately
 //000 -> Do not attempt to restart (latch off).
 //000 -> Shutdown delay of one PWM_CLK, HICCUP equal to TON_RISE
-#define TPS546_INIT_IOUT_OC_FAULT_RESPONSE 0xC0  /* shut down, no retries */
+#define TPS546_INIT_IOUT_OC_FAULT_RESPONSE 0x1B//0xC0  /* shut down, no retries */
 
   /* temperature */
 // It is better to set the temperature warn limit for TPS546 more higher than Ultra 
@@ -91,15 +109,15 @@ typedef struct
 #define TPS546_INIT_OT_FAULT_RESPONSE 0xFF /* wait for cooling, and retry */
 
   /* timing */
-#define TPS546_INIT_TON_DELAY 0
-#define TPS546_INIT_TON_RISE 3
+#define TPS546_INIT_TON_DELAY 3
+#define TPS546_INIT_TON_RISE 10
 #define TPS546_INIT_TON_MAX_FAULT_LIMIT 0
 #define TPS546_INIT_TON_MAX_FAULT_RESPONSE 0x3B
 #define TPS546_INIT_TOFF_DELAY 0
 #define TPS546_INIT_TOFF_FALL 0
 
 #define INIT_STACK_CONFIG 0x0001 //One-Slave, 2-phase
-#define INIT_SYNC_CONFIG 0x00D0 //Enable Auto Detect SYNC
+#define INIT_SYNC_CONFIG 0xD0 //Enable Auto Detect SYNC
 #define INIT_PIN_DETECT_OVERRIDE 0xFFFF //use pin values
 
 /*-------------------------*/
@@ -172,7 +190,7 @@ typedef struct
 esp_err_t TPS546_init(TPS546_CONFIG config);
 
 void TPS546_read_mfr_info(uint8_t *);
-void TPS546_write_entire_config(void);
+void TPS546_write_entire_config(uint16_t stack_config);
 int TPS546_get_frequency(void);
 void TPS546_set_frequency(int);
 int TPS546_get_temperature(void);
@@ -187,5 +205,7 @@ esp_err_t TPS546_check_status(GlobalState * GLOBAL_STATE);
 esp_err_t TPS546_clear_faults(void);
 
 const char* TPS546_get_error_message(void); //Get the current TPS error message
+void TPS546_log_snapshot(const TPS546_StatusSnapshot *s);
+esp_err_t TPS546_snapshot_status(TPS546_StatusSnapshot *s);
 
 #endif /* TPS546_H_ */
