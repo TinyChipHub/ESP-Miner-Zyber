@@ -367,10 +367,10 @@ esp_err_t TPS546_init(TPS546_CONFIG config)
 
     ESP_LOGI(TAG, "Device ID: %02x %02x %02x %02x %02x %02x", id[0], id[1], id[2], id[3], id[4], id[5]);
 
-    // if (!id_matched) {
+    if (!id_matched) {
 
         ESP_LOGE(TAG, "Cannot find TPS546 regulator - Device ID mismatch");
-        //return ESP_FAIL;
+        return ESP_FAIL;
     }
 
     //write operation register to turn off power
