@@ -16,6 +16,7 @@ add_compile_definitions(LV_MEM_CUSTOM_REALLOC=lv_psram_realloc)
 
 add_compile_definitions(CONFIG_BOARD_ZYBER_8S=$ENV{CONFIG_BOARD_ZYBER_8S})
 add_compile_definitions(CONFIG_BOARD_ZYBER_8G=$ENV{CONFIG_BOARD_ZYBER_8G})
+add_compile_definitions(CONFIG_BOARD_ZYBER_12G=$ENV{CONFIG_BOARD_ZYBER_12G})
 # set(PROJECT_VER "Zyber-v2.11.1-TCH")
 
 

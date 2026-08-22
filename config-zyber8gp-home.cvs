@@ -10,8 +10,8 @@ stratumpass,data,string,x
 fbstratumurl,data,string,xnas.xaiten.com
 fbstratumport,data,u16,14400
 fbstratumuser,data,string,1ER7ciDN5iL9Nr4r9XWiCJYSGA9ERJffkD.zyber8g
-asicfrequency,data,u16,600
-asicvoltage,data,u16,1180
+asicfrequency,data,u16,500
+asicvoltage,data,u16,1140
 asicmodel,data,string,BM1370
 devicemodel,data,string,zyber8gplus
 boardversion,data,string,1200

@@ -76,8 +76,8 @@
   "clangd.path": "e:\\esp\\esptool\\tools\\esp-clang\\esp-19.1.2_20250312\\esp-clang\\bin\\clangd.exe",
   "clangd.arguments": [
     "--background-index",
-    "--query-driver=e:\\esp\\esptool\\tools\\xtensa-esp-elf\\esp-14.2.0_20241119\\xtensa-esp-elf\\bin\\xtensa-esp32s3-elf-gcc.exe",
-    "--compile-commands-dir=f:\\ESP-Miner-org\\build"
+    "--query-driver=G:\\esp-tool\\tools\\xtensa-esp-elf\\esp-14.2.0_20241119\\xtensa-esp-elf\\bin\\xtensa-esp32s3-elf-gcc.exe",
+    "--compile-commands-dir=e:\\PCBs\\ESP-Miner-TCH\\build"
   ],
   "idf.currentSetup": "G:\\espidf\\v5.5\\esp-idf"
 }

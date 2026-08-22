@@ -369,9 +369,9 @@ esp_err_t TPS546_init(TPS546_CONFIG config)
 
     // if (!id_matched) {
 
-    //     ESP_LOGE(TAG, "Cannot find TPS546 regulator - Device ID mismatch");
-    //     return ESP_FAIL;
-    // }
+        ESP_LOGE(TAG, "Cannot find TPS546 regulator - Device ID mismatch");
+        //return ESP_FAIL;
+    }
 
     //write operation register to turn off power
     u8_value = OPERATION_OFF;
@@ -536,6 +536,15 @@ void TPS546_write_entire_config(uint16_t stack_config)
     ESP_LOGI(TAG, "Setting SYNC_CONFIG: %02X", tps546_config.TPS546_INIT_SYNC_CONFIG);
     smb_write_byte(PMBUS_SYNC_CONFIG, tps546_config.TPS546_INIT_SYNC_CONFIG);
 
+
+
+    // STACK_CONFIG
+    ESP_LOGI(TAG, "Setting STACK_CONFIG: %04X", tps546_config.TPS546_INIT_STACK_CONFIG);
+    smb_write_word(PMBUS_STACK_CONFIG, tps546_config.TPS546_INIT_STACK_CONFIG);
+
+    // SYNC_CONFIG
+    ESP_LOGI(TAG, "Setting SYNC_CONFIG: %02X", INIT_SYNC_CONFIG);
+    smb_write_byte(PMBUS_SYNC_CONFIG, INIT_SYNC_CONFIG);
 
     /* Phase */
     ESP_LOGI(TAG, "Setting PHASE: %02X", tps546_config.TPS546_INIT_PHASE);
@@ -732,7 +741,7 @@ float TPS546_get_iout(void)
     float iout;
 
     //set the phase register to 0xFF to read all phases
-    //smb_write_byte(PMBUS_PHASE, 0xFF);
+    smb_write_byte(PMBUS_PHASE, 0xFF);
 
     /* Get current output (SLINEAR11) */
     if (smb_read_word(PMBUS_READ_IOUT, &u16_value) != ESP_OK) {

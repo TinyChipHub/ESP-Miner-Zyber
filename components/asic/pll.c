@@ -51,7 +51,7 @@ void pll_get_parameters(float target_freq, uint16_t fb_divider_min, uint16_t fb_
         }
     }
 
-    ESP_LOGI(TAG, "Frequency: %g MHz (fb_divider: %d, refdiv: %d, postdiv1: %d, postdiv2: %d)", best_freq, best_fb_divider, best_refdiv, best_postdiv1, best_postdiv2);
+    ESP_LOGD(TAG, "Frequency: %g MHz (fb_divider: %d, refdiv: %d, postdiv1: %d, postdiv2: %d)", best_freq, best_fb_divider, best_refdiv, best_postdiv1, best_postdiv2);
 
     *actual_freq = best_freq;
     *fb_divider = best_fb_divider;
